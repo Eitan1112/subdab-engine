@@ -1,3 +1,3 @@
 MoviePy
 Pocketsphinx
-speech_recognition
+SpeechRecognition

@@ -89,9 +89,11 @@ class Checker():
         """
 
         (base64str, subtitles) = args
+        print('Checking single transcript', base64str, subtitles)
         clean_subtitles = clean_text(subtitles)
         converter = Converter(base64str)
         transcript = converter.convert_video_to_text()
+        converter.clean()
         clean_transcript = clean_text(transcript)
 
         similarity_rate = SequenceMatcher(None, clean_transcript, clean_subtitles).ratio()

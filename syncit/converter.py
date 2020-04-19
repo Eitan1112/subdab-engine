@@ -32,8 +32,8 @@ class Converter():
             base64str (str): Base64str of the file.
         """
         
+        self.tmpdir = tempfile.mkdtemp()
         self.video = self.convert_base64_to_file(base64str)
-        self.tmpdir = None
         
 
     def check_extension(self):
