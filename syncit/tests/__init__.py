@@ -1,0 +1,1 @@
+from syncit.tests import *
