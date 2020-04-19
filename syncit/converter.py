@@ -1,4 +1,4 @@
-from moviepy.editor import VideoFileClip
+from moviepy.editor import AudioFileClip
 import subprocess
 import base64
 import tempfile
@@ -62,7 +62,7 @@ class Converter():
             str: Path to video file.
         """
 
-        filename = uuid.uuid4().hex[:10]
+        filename = uuid.uuid4().hex[:10] + '.mp4' # TODO Find Format Aloneee
         path = os.path.join(self.tmpdir, filename)
         logger.debug(f'Converting base64 to file. path: {path}')
         with open(path, 'wb') as f:
@@ -95,7 +95,7 @@ class Converter():
 
         audio_path = os.path.join(self.tmpdir, audio_filename)
 
-        video = VideoFileClip(self.video)
+        video = AudioFileClip(self.video)
         
         # Validate start and end times
         if(not start or start < 0):
@@ -128,17 +128,20 @@ class Converter():
             audio_filename = f'{end}{start}.wav'
 
             audio_path = os.path.join(tmpdir, audio_filename)
+            logger.debug(f'Audio Path: {audio_path}')
+            logger.debug(f'Video Path: {self.video}')
 
-            video = VideoFileClip(self.video)
+            video = AudioFileClip(self.video)
 
             # Validate start and end times
-            if(start < 0):
-                start = 0
-            if(end > video.duration):
-                end = video.duration
 
             # Create subclip with the desired length and get transcript
+            logger.debug(f'Writing to audio file {audio_path}')
             if(start and end):
+                if(start < 0):
+                    start = 0
+                if(end > video.duration):
+                    end = video.duration
                 video.subclip(start, end).audio.write_audiofile(audio_path)            
             else:
                 video.audio.write_audiofile(audio_path)

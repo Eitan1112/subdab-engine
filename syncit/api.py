@@ -31,18 +31,18 @@ def check_sync():
         print(type(request.json), len(request.json))
         res = Response(json.dumps({ 'error': 'Bad request.'}), 400)
     else:
-        try:
-            logger.debug('Request validated, getting json')
-            data = request.json
-            logger.debug('Recieved json, initating checker')
-            checker = Checker(data)
-            logger.debug('Check initiated, check is_synced')
-            is_synced = checker.check_is_synced()
-            logger.debug('Checked is synced', is_synced, ', Sending response')
-            res = Response(json.dumps({ 'is_synced': is_synced }), 200)
-        except Exception as e:
-            logger.warning(f'Error in check_sync. Error: {e}')
-            res = Response(json.dumps({ 'error': 'Internal server error.'}), 500)
+        # try:
+        logger.debug('Request validated, getting json')
+        data = request.json
+        logger.debug('Recieved json, initating checker')
+        checker = Checker(data)
+        logger.debug('Check initiated, check is_synced')
+        is_synced = checker.check_is_synced()
+        logger.debug('Checked is synced', is_synced, ', Sending response')
+        res = Response(json.dumps({ 'is_synced': is_synced }), 200)
+        # except Exception as e:
+        #     logger.warning(f'Error in check_sync. Error: {e}')
+        #     res = Response(json.dumps({ 'error': 'Internal server error.'}), 500)
 
     return res
 
