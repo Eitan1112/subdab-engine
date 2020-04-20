@@ -25,30 +25,32 @@ class Converter():
         tmpdir (str): Persistent temporary folder (if created).
     """
 
-    def __init__(self, base64str: str):
+    def __init__(self, base64str: str, extension: str):
         """
         Constructor of Converter.
 
         Params:
             base64str (str): Base64 string of the file.
+            extension (str): The file extension.
         """
 
         self.tmpdir = tempfile.mkdtemp()
-        self.video = self.convert_base64_to_file(base64str)
+        self.video = self.convert_base64_to_file(base64str, extension)
 
-    def convert_base64_to_file(self, base64str: str):
+    def convert_base64_to_file(self, base64str: str, extension: str):
         """
         Converts base64 string to a file. Stores it in temporary location and returns it's path.
 
         Params:
             base64 (str): Base64 string.
+            extension (str): The file extension.
 
         Returns:
             str: Path to video file.
         """
 
         # TODO #8 Find Format Aloneee
-        filename = uuid.uuid4().hex[:10] + '.mp4'
+        filename = f'{uuid.uuid4().hex[:10]}.{extension}'
         path = os.path.join(self.tmpdir, filename)
         logger.debug(f'Converting base64 to file. path: {path}')
         with open(path, 'wb') as f:

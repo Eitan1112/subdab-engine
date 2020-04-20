@@ -25,7 +25,7 @@ class DelayChecker():
         sp (SubtitleParser): SubtitleParser object with the subtitles loaded.
     """
 
-    def __init__(self, base64str: str, timestamp, subtitles: str):
+    def __init__(self, base64str: str, timestamp, subtitles: str, extension: str):
         """
         Class to check the delay.
 
@@ -33,9 +33,10 @@ class DelayChecker():
             base64str (str): Base64 string of the video to check.
             timestamp (dict): Dictionary containing 'start' and 'end' attributes.
             subtitles (str): The subtitles string.
+            extension (str): The extension.
         """
 
-        self.converter = Converter(base64str)
+        self.converter = Converter(base64str, extension)
         self.start = timestamp['start']
         self.end = timestamp['end']
         self.sp = SubtitleParser(subtitles)

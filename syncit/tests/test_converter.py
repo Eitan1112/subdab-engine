@@ -17,7 +17,7 @@ class TestConverter(unittest.TestCase):
 
         with open(TestConstants.SAMPLE_VIDEO_PATH, 'rb') as f:
             data = f.read()
-        self.converter = Converter(base64.b64encode(data).decode('ascii'))
+        self.converter = Converter(base64.b64encode(data).decode('ascii'), 'mp4')
 
     def test_convert_video_to_audio(self):
         """

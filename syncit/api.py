@@ -35,13 +35,12 @@ def check_sync():
 
     try:
         logger.debug('Request validated, getting json')
-        data = request.json
+        data = request.json['data']
+        extension = request.json['extension']
         logger.debug('Recieved json, initating checker')
-        checker = SyncChecker(data)
+        checker = SyncChecker(data, extension)
         logger.debug('Check initiated, check is_synced')
         is_synced = checker.check_is_synced()
-        logger.debug(
-            f'Checked is synced. Result: {is_synced}. Sending response')
         if(is_synced):
             return Response(json.dumps({'is_synced': is_synced}), 200)
         else:
@@ -63,6 +62,7 @@ def check_delay():
         base64str: The buffer encoded as base64.
         timestamp: {start: START, end: END}. Note that this is in comparison to the full video loaded on the client side.
         subtitles: The subtitles of this timestamps.
+        extension: The extension of the video file.
 
     Response:
         If delay found:
@@ -79,7 +79,8 @@ def check_delay():
     base64str = request.json['base64str']
     timestamp = request.json['timestamp']
     subtitles = request.json['subtitles']
-    dc = DelayChecker(base64str, timestamp, subtitles)
+    extension = request.json['extension']
+    dc = DelayChecker(base64str, timestamp, subtitles, extension)
     delay = dc.check_delay_in_timespan()
 
     if(delay is None):

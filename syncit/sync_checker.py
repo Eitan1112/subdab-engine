@@ -24,15 +24,17 @@ class SyncChecker():
         data (list): List of lists conatining [base64_buffer, subtitles] e.g: [[f3b5AAA, 'I went to eat'], [a93KKpr, 'I went to sleep']]
     """
 
-    def __init__(self, data):
+    def __init__(self, extension: str, data: list):
         """
         Constructor of the Checker class.
 
         Params:
+            extension (str): The extension of the file.
             data (list): List of lists conatining [base64_buffer, subtitles] e.g: [[f3b5AAA, 'I went to eat'], [a93KKpr, 'I went to sleep']]
         """
 
         self.data = data
+        self.extension = extension
 
     def check_is_synced(self):
         """
@@ -73,7 +75,7 @@ class SyncChecker():
         logger.info(f'Is Synced Result: {is_synced}')
         return is_synced
 
-    def check_single_transcript(self, args):
+    def check_single_transcript(self, args: tuple):
         """
         Checks the similarity ratio between subtitles and the video during a certain timespan based on base64 string of the video.
 
@@ -89,8 +91,8 @@ class SyncChecker():
         (base64str, subtitles) = args
         clean_subtitles = clean_text(subtitles)
 
-        # Get Transcritp
-        converter = Converter(base64str)
+        # Get Transcritpt
+        converter = Converter(base64str, self.extension)
         transcript = converter.convert_video_to_text()
         converter.clean()
         clean_transcript = clean_text(transcript)
