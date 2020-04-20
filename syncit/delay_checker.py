@@ -151,7 +151,6 @@ class DelayChecker():
             return
 
         else:
-            logger.info(f'Subs delay: {subs_delay}')
             return subs_delay
 
     def check_single_transcript(self, subtitles: str, start: float, end: float):

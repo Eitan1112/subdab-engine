@@ -70,8 +70,7 @@ class SyncChecker():
 
             pool.terminate()
 
-        logger.info(
-            f'Similars: {similars}. Min Similars: {min_similars}. Is Synced: {is_synced}')
+        logger.info(f'Is Synced Result: {is_synced}')
         return is_synced
 
     def check_single_transcript(self, args):
@@ -86,7 +85,7 @@ class SyncChecker():
         Returns:
             Boolean: Whether the video and subtitles are synced or not.
         """
-        
+
         (base64str, subtitles) = args
         clean_subtitles = clean_text(subtitles)
 

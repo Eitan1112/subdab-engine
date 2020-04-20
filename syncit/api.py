@@ -28,6 +28,7 @@ def check_sync():
         Boolean: If synced or not.
     """
 
+    logger.info('Checking sync.')
     if(type(request.json) != list or len(request.json) != Constants.SAMPLES_TO_CHECK):
         print(type(request.json), len(request.json))
         return Response(json.dumps({'error': 'Bad request.'}), 400)
@@ -49,7 +50,7 @@ def check_sync():
             return Response(json.dumps({'is_synced': False, 'send_timestamp': {'start': start, 'end': end}}), 200)
 
     except Exception as e:
-        logger.warning(f'Error in check_sync. Error: {e}')
+        logger.error(f'Error in check_sync. Error: {e}')
         return Response(json.dumps({'error': 'Internal server error.'}), 500)
 
 
@@ -70,7 +71,8 @@ def check_delay():
         If delay not found:
             'send_timestamps': Next Timestamps
     """
-
+    
+    logger.info('Checking delay.')
     if(type(request.json) != dict):
         return Response('Bad Request.', 400)
 
