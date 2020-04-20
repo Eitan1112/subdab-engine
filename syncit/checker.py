@@ -77,7 +77,7 @@ class Checker():
 
     def check_single_transcript(self, args):
         """
-        Checks the similarity ratio between subtitles and the video during a certain timespan.
+        Checks the similarity ratio between subtitles and the video during a certain timespan based on base64 string of the video.
 
         Params:
         args (tuple) containing:

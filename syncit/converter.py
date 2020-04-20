@@ -95,17 +95,17 @@ class Converter():
 
         audio_path = os.path.join(self.tmpdir, audio_filename)
 
-        video = AudioFileClip(self.video)
+        audio = AudioFileClip(self.video)
         
         # Validate start and end times
         if(not start or start < 0):
             start = 0
 
-        if(not end or end > video.duration):
-            end = video.duration
+        if(not end or end > audio.duration):
+            end = audio.duration
 
         # Convert
-        video.subclip(start, end).audio.write_audiofile(audio_path)
+        audio.subclip(start, end).write_audiofile(audio_path)
 
         return audio_path
 
@@ -131,7 +131,7 @@ class Converter():
             logger.debug(f'Audio Path: {audio_path}')
             logger.debug(f'Video Path: {self.video}')
 
-            video = AudioFileClip(self.video)
+            audio = AudioFileClip(self.video)
 
             # Validate start and end times
 
@@ -140,11 +140,11 @@ class Converter():
             if(start and end):
                 if(start < 0):
                     start = 0
-                if(end > video.duration):
-                    end = video.duration
-                video.subclip(start, end).audio.write_audiofile(audio_path)            
+                if(end > audio.duration):
+                    end = audio.duration
+                audio.subclip(start, end).write_audiofile(audio_path)            
             else:
-                video.audio.write_audiofile(audio_path)
+                audio.write_audiofile(audio_path)
 
             transcript = self.convert_audio_to_text(audio_path, hot_word=hot_word)
             return transcript

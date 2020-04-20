@@ -25,7 +25,7 @@ class SubtitleParser():
         Constructor for the SubtitlesParser class.
 
         Params:
-            subtitles (str): Path to subtitles file. 
+            subtitles (str): Subtitles string. 
         """
 
         self.subtitles = subtitles
@@ -37,12 +37,9 @@ class SubtitleParser():
         Reads the subtitle file and stores it in memory for easy access.
         """
 
-        with open(self.subtitles, 'r') as file:
-            subs = file.read()
-        
-        pattern = r"(\d+)\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\n)*.+)" # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
+        pattern = r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)" # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
 
-        re_subs = re.findall(pattern, subs, re.M|re.I)
+        re_subs = re.findall(pattern, self.subtitles, re.M|re.I)
 
         self.re_subs = re_subs
         

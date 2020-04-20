@@ -1,6 +1,7 @@
 from flask import Flask, request, Response
 from flask_cors import CORS, cross_origin
 import json
+from syncit.delay_checker import DelayChecker
 from syncit.constants import Constants
 from syncit.checker import Checker
 import logging
@@ -19,7 +20,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 def check_sync():
     """
     Route to check if buffers and subtitles are synced or not.
-    
+
     Request Params:
         data (list): List of lists conatining [base64_buffer, subtitles] e.g: [[f3b5AAA, 'I went to eat'], [a93KKpr, 'I went to sleep']]
 
@@ -29,30 +30,65 @@ def check_sync():
 
     if(type(request.json) != list or len(request.json) != Constants.SAMPLES_TO_CHECK):
         print(type(request.json), len(request.json))
-        res = Response(json.dumps({ 'error': 'Bad request.'}), 400)
-    else:
-        # try:
+        return Response(json.dumps({'error': 'Bad request.'}), 400)
+
+    try:
         logger.debug('Request validated, getting json')
         data = request.json
         logger.debug('Recieved json, initating checker')
         checker = Checker(data)
         logger.debug('Check initiated, check is_synced')
         is_synced = checker.check_is_synced()
-        logger.debug('Checked is synced', is_synced, ', Sending response')
-        res = Response(json.dumps({ 'is_synced': is_synced }), 200)
-        # except Exception as e:
-        #     logger.warning(f'Error in check_sync. Error: {e}')
-        #     res = Response(json.dumps({ 'error': 'Internal server error.'}), 500)
+        logger.debug(
+            f'Checked is synced. Result: {is_synced}. Sending response')
+        if(is_synced):
+            return Response(json.dumps({'is_synced': is_synced}), 200)
+        else:
+            start = 0
+            end = Constants.DELAY_CHECKER_SECTIONS_TIME + Constants.DELAY_RADIUS
+            return Response(json.dumps({'is_synced': False, 'send_timestamp': {'start': start, 'end': end}}), 200)
 
-    return res
-
+    except Exception as e:
+        logger.warning(f'Error in check_sync. Error: {e}')
+        return Response(json.dumps({'error': 'Internal server error.'}), 500)
 
 
 @app.route('/check_delay', methods=['POST'])
 def check_delay():
-    pass
+    """
+    Route to check the delay based on a timestamps.
+
+    Request Params:
+        base64str: The buffer encoded as base64.
+        timestamp: {start: START, end: END}. Note that this is in comparison to the full video loaded on the client side.
+        subtitles: The subtitles of this timestamps.
+
+    Response:
+        If delay found:
+            'subtitles': SubtitlesFile
+
+        If delay not found:
+            'send_timestamps': Next Timestamps
+    """
+
+    if(type(request.json) != dict):
+        return Response('Bad Request.', 400)
+
+    base64str = request.json['base64str']
+    timestamp = request.json['timestamp']
+    subtitles = request.json['subtitles']
+    dc = DelayChecker(base64str, timestamp, subtitles)
+    delay = dc.check_delay_in_timespan()
+
+    if(delay is None):
+        start = timestamp['start'] + Constants.DELAY_CHECKER_SECTIONS_TIME
+        end = timestamp['end'] + Constants.DELAY_CHECKER_SECTIONS_TIME
+        return Response(json.dumps({'send_timestamp': {'start': start, 'end': end}}), 200)
+
+    else:
+        return Response(json.dumps({ 'delay': delay }), 200)
+
 
 @app.errorhandler(404)
 def page_not_found(e):
-    # note that we set the 404 status explicitly
     return Response('404 not found', 404)

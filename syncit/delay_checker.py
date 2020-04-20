@@ -7,78 +7,35 @@ import logging
 from logger_setup import setup_logging
 from syncit.checker import Checker
 from syncit.helpers import *
-
+from syncit.subtitle_parser import SubtitleParser
+from syncit.converter import Converter
+from difflib import SequenceMatcher
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
-class DelayChecker(Checker):
+class DelayChecker():
     """
     Class to check the delay of subtitles and video file.
 
     Attributes:
-        video (str): Path to video.
-        sp (SubtitlesParser object): SubtitlesParser with the subtitles loaded.
-        converter (Converter): Converter object with the video loaded.
-        audio_path (str): Path to audio file.
     """
 
-    def __init__(self, video, subtitles):
+    def __init__(self, base64str, timestamp, subtitles):
         """
         Class to check the delay.
 
         Attributes:
-            video (str): Path to video.
-            sp (SubtitlesParser object): SubtitlesParser with the subtitles loaded.
-            converter (Converter): Converter object with the video loaded.
-            audio_path (str): Path to audio file.
-        """
-        super().__init__(video, subtitles)
-
-
-    def check_delay(self):
-        """
-        Main function that checks the delay based on subtitls and video file.
-
-        Returns:
-            int: Delay in seconds.
         """
 
-        # Get video length
-        video_length =  VideoFileClip(self.video).duration
-
-        # Loop through sections of constant amount of seconds
-        for start in range(0, int(video_length), Constants.DELAY_CHECKER_SECTIONS_TIME):
-            
-            # Calculate end and start times
-            audio_start = start - Constants.DELAY_RADIUS
-            end = start + Constants.DELAY_CHECKER_SECTIONS_TIME
-            audio_end = start + Constants.DELAY_CHECKER_SECTIONS_TIME + Constants.DELAY_RADIUS
-
-            # Avoid edge cases
-            if(audio_end > video_length):
-                audio_end = video_length
-            
-            if(audio_start < 0):
-                audio_start = 0
-                
-            logger.debug(f'Looping. Start: {audio_start}. End: {audio_end}. Step: {Constants.DELAY_CHECKER_SECTIONS_TIME}')
-
-            # Convert video to audio
-            self.audio_path = self.converter.convert_video_to_audio(audio_start, audio_end)
-
-            # Try to check the delay in this section
-            delay = self.check_delay_in_timespan(self.audio_path, start, end)
-            if(delay):
-                return delay
-        
-        # Clean up
-        self.converter.clean()
-        logger.warning('Unable to find subtitles delay.')
-        raise Exception('Unable to find subtitles delay.')
+        self.converter = Converter(base64str)
+        self.video = self.converter.video
+        self.start = timestamp['start']
+        self.end = timestamp['end']
+        self.sp = SubtitleParser(subtitles)
 
        
-    def check_delay_in_timespan(self, audio_path, start, end):
+    def check_delay_in_timespan(self):
         """
             Loops through the first word of each row of the subtitles in the specified timespan.
             Foreach first word, gets the transcript with radius considerations
@@ -93,7 +50,9 @@ class DelayChecker(Checker):
         """
               
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
-        valid_hot_words = self.sp.get_valid_hot_words(start, end)
+        valid_hot_words = self.sp.get_valid_hot_words(self.start, self.end)
+
+        audio_path = self.converter.convert_video_to_audio()
 
         # Add to the start of each tuple in valid_hot_words the audio_path
         imap_args = [tuple([audio_path] + list(element)) for element in valid_hot_words]
@@ -111,10 +70,12 @@ class DelayChecker(Checker):
             pool.join()
         
         if(delay):
-            logger.info(f"Found delay: {delay}") 
+            logger.info(f"Found delay: {delay}")
+            self.converter.clean()
             return delay       
         else:
-            logger.error(f'Unable to find subtitles delay in {start}-{end}.')
+            logger.error(f'Unable to find subtitles delay in {self.start}-{self.end}.')
+            self.converter.clean()
             return
 
 
@@ -186,6 +147,31 @@ class DelayChecker(Checker):
         else:
             logger.info(f'Subs delay: {subs_delay}')
             return subs_delay
+
+    
+    def check_single_transcript(self, subtitles, start, end):
+        """
+        Checks the similarity ratio between subtitles and the video during a certain timespan based on the video path.
+
+        Params:
+            subtitles (str): The subtitles of this timestamps.
+            start (float): Start time of the timestamps in the audio
+            end (float): End time of the timestamps in the audio
+
+        Returns:
+            Boolean: Whether the video and subtitles are synced or not.
+        """
+
+        transcript = self.converter.convert_video_to_text(start, end)
+        clean_transcript = clean_text(transcript)
+
+        similarity_rate = SequenceMatcher(None, clean_transcript, subtitles).ratio()
+        
+        logger.debug(f"""Subtitles: {subtitles} | Clean Subtitles: {subtitles} | Transcript: {clean_transcript} | Clean Transcript: {clean_transcript} | Similarity: {similarity_rate}""")
+
+        if(similarity_rate > Constants.MIN_ACCURACY):
+            return True
+        return False
             
 
     
