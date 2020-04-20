@@ -3,7 +3,7 @@ from flask_cors import CORS, cross_origin
 import json
 from syncit.delay_checker import DelayChecker
 from syncit.constants import Constants
-from syncit.checker import Checker
+from syncit.sync_checker import SyncChecker
 import logging
 from logger_setup import setup_logging
 
@@ -36,7 +36,7 @@ def check_sync():
         logger.debug('Request validated, getting json')
         data = request.json
         logger.debug('Recieved json, initating checker')
-        checker = Checker(data)
+        checker = SyncChecker(data)
         logger.debug('Check initiated, check is_synced')
         is_synced = checker.check_is_synced()
         logger.debug(

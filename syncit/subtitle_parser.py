@@ -15,7 +15,6 @@ class SubtitleParser():
     Read the subtitles and parses them for ease of use.
 
     Attributes:
-        path (str): Path to subtitles file.
         subtitles (str): Subtitles file content.
         re_subs (list): List of tuples containing the parsed subtitles.
     """
@@ -34,7 +33,7 @@ class SubtitleParser():
     
     def read_subtitles(self):
         """
-        Reads the subtitle file and stores it in memory for easy access.
+        Reads the subtitle content using regex and stores it in memory for easy access.
         """
 
         pattern = r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)" # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
@@ -52,7 +51,7 @@ class SubtitleParser():
             index (int): Index
 
         Returns:
-            tuple: (subtitles, start, end)
+            tuple: (cleaned_subtitles, start, end)
         """
 
         match = self.re_subs[index - 1]

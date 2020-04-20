@@ -5,7 +5,6 @@ from moviepy.editor import VideoFileClip
 from itertools import repeat
 import logging
 from logger_setup import setup_logging
-from syncit.checker import Checker
 from syncit.helpers import clean_text, parse_sections_occurences_results, need_to_abort
 from syncit.subtitle_parser import SubtitleParser
 from syncit.converter import Converter
@@ -20,13 +19,20 @@ class DelayChecker():
     Class to check the delay of subtitles and video file.
 
     Attributes:
+        converter (Converter): Converter with the base64 of the timestamp loaded.
+        start (float): Start time of the video, compared to the larger video.
+        end (float): End time of the video,compared to the larger video.
+        sp (SubtitleParser): SubtitleParser object with the subtitles loaded.
     """
 
-    def __init__(self, base64str, timestamp, subtitles):
+    def __init__(self, base64str: str, timestamp, subtitles: str):
         """
         Class to check the delay.
 
-        Attributes:
+        Params:
+            base64str (str): Base64 string of the video to check.
+            timestamp (dict): Dictionary containing 'start' and 'end' attributes.
+            subtitles (str): The subtitles string.
         """
 
         self.converter = Converter(base64str)
@@ -36,16 +42,10 @@ class DelayChecker():
 
     def check_delay_in_timespan(self):
         """
-            Loops through the first word of each row of the subtitles in the specified timespan.
-            Foreach first word, gets the transcript with radius considerations
-            and compares it until it finds a match.
+        Tries to find the delay in the timespan of the class.
 
-            Params:
-                start (int): start time in seconds.
-                end (int): end time in seconds.
-
-            Returns:
-                int: Subtitles delay in seconds. 
+        Returns:
+            int: Subtitles delay in seconds. 
         """
 
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
@@ -80,7 +80,7 @@ class DelayChecker():
             self.converter.clean()
             return
 
-    def parse_single_hot_word(self, args):
+    def parse_single_hot_word(self, args: tuple):
         """
         Gets a word and a timestamp, and tries to find the delay based on that.
         Tries to find the word time, and if found verifies that the delay is actually correct.
@@ -90,8 +90,8 @@ class DelayChecker():
                 audio_path (str): Path to audio file.
                 hot_word (str): hot word to check.
                 subtitles (str): subtitles to verify.
-                subtitles_start (int): start time in seconds of the subtitles.
-                subtitles_end (int): end time in seconds of the subtitles.
+                start (int): start time in seconds of the subtitles.
+                end (int): end time in seconds of the subtitles.
 
         Returns:
             int: The delay. (None if couldn't find)
@@ -154,7 +154,7 @@ class DelayChecker():
             logger.info(f'Subs delay: {subs_delay}')
             return subs_delay
 
-    def check_single_transcript(self, subtitles, start, end):
+    def check_single_transcript(self, subtitles: str, start: float, end: float):
         """
         Checks the similarity ratio between subtitles and the video during a certain timespan based on the video path.
 
@@ -180,18 +180,18 @@ class DelayChecker():
             return True
         return False
 
-    def word_in_timespan_occurrences(self, audio_path, word, start, end):
+    def word_in_timespan_occurrences(self, audio_path: str, word: str, start: float, end: float):
         """
-            Checks occurrences of a word in an audio timestamp.
+        Checks occurrences of a word in an audio timestamp.
 
-            Params:
-                audio_path (str): Path to audio file.
-                word (str): The word.
-                start (int): Start time.
-                end (int): End time.
+        Params:
+            audio_path (str): Path to audio file.
+            word (str): The word.
+            start (float): Start time.
+            end (float): End time.
 
-            Returns:
-                int: Number of occurrences of word in transcript.
+        Returns:
+            int: Number of occurrences of word in transcript.
         """
 
         transcript = self.converter.convert_audio_to_text(
