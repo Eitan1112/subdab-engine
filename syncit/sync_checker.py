@@ -21,6 +21,7 @@ class SyncChecker():
     Class to check if a subtitle file is synced with a video file.
 
     Attributes:
+        extension (str): The extension of the file.
         data (list): List of lists conatining [base64_buffer, subtitles] e.g: [[f3b5AAA, 'I went to eat'], [a93KKpr, 'I went to sleep']]
     """
 

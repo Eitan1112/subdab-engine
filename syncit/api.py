@@ -29,7 +29,7 @@ def check_sync():
     """
 
     logger.info('Checking sync.')
-    if(type(request.json) != dict or len(request.json) != Constants.SAMPLES_TO_CHECK):
+    if(type(request.json) != dict):
         print(type(request.json), len(request.json))
         return Response(json.dumps({'error': 'Bad request.'}), 400)
 
@@ -38,7 +38,7 @@ def check_sync():
         data = request.json['data']
         extension = request.json['extension']
         logger.debug('Recieved json, initating checker')
-        checker = SyncChecker(data, extension)
+        checker = SyncChecker(extension, data)
         logger.debug('Check initiated, check is_synced')
         is_synced = checker.check_is_synced()
         if(is_synced):
@@ -76,20 +76,24 @@ def check_delay():
     if(type(request.json) != dict):
         return Response('Bad Request.', 400)
 
-    base64str = request.json['base64str']
-    timestamp = request.json['timestamp']
-    subtitles = request.json['subtitles']
-    extension = request.json['extension']
-    dc = DelayChecker(base64str, timestamp, subtitles, extension)
-    delay = dc.check_delay_in_timespan()
+    try:
+        base64str = request.json['base64str']
+        timestamp = request.json['timestamp']
+        subtitles = request.json['subtitles']
+        extension = request.json['extension']
+        dc = DelayChecker(base64str, timestamp, subtitles, extension)
+        delay = dc.check_delay_in_timespan()
 
-    if(delay is None):
-        start = timestamp['start'] + Constants.DELAY_CHECKER_SECTIONS_TIME
-        end = timestamp['end'] + Constants.DELAY_CHECKER_SECTIONS_TIME
-        return Response(json.dumps({'send_timestamp': {'start': start, 'end': end}}), 200)
+        if(delay is None):
+            start = timestamp['start'] + Constants.DELAY_CHECKER_SECTIONS_TIME
+            end = timestamp['end'] + Constants.DELAY_CHECKER_SECTIONS_TIME
+            return Response(json.dumps({'send_timestamp': {'start': start, 'end': end}}), 200)
 
-    else:
-        return Response(json.dumps({ 'delay': delay }), 200)
+        else:
+            return Response(json.dumps({ 'delay': delay }), 200)
+    except Exception as e:
+        logger.error(f'Error in check_delay. Error: {e}')
+        return Response(json.dumps({ 'error': 'Internal Server Error.'}), 500)
 
 
 @app.errorhandler(404)
