@@ -29,7 +29,7 @@ def check_sync():
     """
 
     logger.info('Checking sync.')
-    if(type(request.json) != list or len(request.json) != Constants.SAMPLES_TO_CHECK):
+    if(type(request.json) != dict or len(request.json) != Constants.SAMPLES_TO_CHECK):
         print(type(request.json), len(request.json))
         return Response(json.dumps({'error': 'Bad request.'}), 400)
 
