@@ -1,7 +1,9 @@
+import base64
 import unittest
 import os
 from syncit.converter import Converter
 from syncit.constants import TestConstants
+
 
 class TestConverter(unittest.TestCase):
     """
@@ -13,9 +15,10 @@ class TestConverter(unittest.TestCase):
         Setup to run before each test.
         """
 
-        self.converter = Converter(TestConstants.SAMPLE_VIDEO_PATH)
+        with open(TestConstants.SAMPLE_VIDEO_PATH, 'rb') as f:
+            data = f.read()
+        self.converter = Converter(base64.b64encode(data).decode('ascii'))
 
-    
     def test_convert_video_to_audio(self):
         """
         Tests convert_to_wav method.
@@ -24,12 +27,9 @@ class TestConverter(unittest.TestCase):
         """
 
         # Convert the entire file
-        audio_path = self.converter.convert_video_to_audio(-1000.5, 1000.5)
-        
+        audio_path = self.converter.convert_video_to_audio()
         audio_size = os.path.getsize(audio_path)
         self.assertEqual(audio_size, TestConstants.SAMPLE_AUDIO_SIZE)
-
-
 
     def test_convert_audio_to_text(self):
         """
@@ -37,9 +37,15 @@ class TestConverter(unittest.TestCase):
         """
 
         audio_path = TestConstants.SAMPLE_AUDIO_PATH
-        self.test_convert_media_to_text(audio_path)
+        desired_transscripts = TestConstants.TRANSCRIPT_FROM_SPHINX
+        start = TestConstants.TRANSCRIPT_TIMESTAMP_START
+        end = TestConstants.TRANSCRIPT_TIMESTAMP_END
 
-    
+        recieved_transcript = self.converter.convert_audio_to_text(
+            audio_path, start, end)
+
+        self.assertTrue((recieved_transcript in desired_transscripts))
+
     def test_convert_media_to_text(self, audio_path=None):
         """
         Test for both the convert_video_to_text method and convert_audio_to_text methods.
@@ -49,25 +55,10 @@ class TestConverter(unittest.TestCase):
         start = TestConstants.TRANSCRIPT_TIMESTAMP_START
         end = TestConstants.TRANSCRIPT_TIMESTAMP_END
 
-        if(audio_path):
-            recieved_transcript = self.converter.convert_audio_to_text(audio_path, start, end)
-        else:
-            recieved_transcript = self.converter.convert_video_to_text(start, end)
+        recieved_transcript = self.converter.convert_video_to_text(
+            start, end)
 
-        is_good = recieved_transcript in desired_transscripts
-        self.assertTrue(is_good)
-
-        hot_word = TestConstants.SAMPLE_WORD
-        (start, end) = TestConstants.SAMPLE_WORD_TIMESTAMP
-
-        if(audio_path):
-            recieved_transcript = self.converter.convert_audio_to_text(audio_path, start, end, hot_word)
-        else:
-            recieved_transcript = self.converter.convert_video_to_text(start, end, hot_word)
-        self.assertEqual(recieved_transcript.strip(), hot_word.strip())
-
-    
-
+        self.assertTrue((recieved_transcript in desired_transscripts))
 
     def tearDown(self):
         """

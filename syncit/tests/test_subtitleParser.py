@@ -13,19 +13,16 @@ class TestSubtitleParser(unittest.TestCase):
         sp (SubtitleParser object): SubtitleParser with the synced subs.
     """
 
-    def setUp(self):
-        """
-        Creates an sp attribute with the synced subtitles sample.
-        """
-
-        self.sp = SubtitleParser(TestConstants.SAMPLE_SYNCED_PATH)
-
     def test_get_subtitles(self):
         """
         Test for the get_subtitles method.
         """
 
-        (subtitles, start, end) = self.sp.get_subtitles(1)
+        with open(TestConstants.SAMPLE_SYNCED_PATH, 'r') as f:
+            subtitles = f.read().replace('\n', '\r\n')
+        
+        sp = SubtitleParser(subtitles)
+        (subtitles, start, end) = sp.get_subtitles(1)
 
         desired_subtitles = TestConstants.TRANSCRIPT_IN_TIMESTAMP
         desired_start = TestConstants.TRANSCRIPT_TIMESTAMP_START
@@ -36,7 +33,7 @@ class TestSubtitleParser(unittest.TestCase):
         self.assertEqual(end, desired_end)
 
         with self.assertRaises(IndexError):
-            self.sp.get_subtitles(10000000)
+            sp.get_subtitles(10000000)
 
 
     def test_get_valid_hot_words(self):
@@ -44,8 +41,10 @@ class TestSubtitleParser(unittest.TestCase):
         Test for get_valid_hot_words method.
         """
 
+        with open(TestConstants.SUBTITLES_SAMPLE, 'r') as f:
+            subtitles = f.read().replace('\n', '\r\n')
         
-        sp = SubtitleParser(TestConstants.SUBTITLES_SAMPLE)
+        sp = SubtitleParser(subtitles)
         desired_valid_hot_words = TestConstants.SAMPLE_VALID_HOT_WORDS
         start = TestConstants.SAMPLE_HOT_WORDS_START
         end = TestConstants.SAMPLE_HOT_WORDS_END
@@ -54,4 +53,6 @@ class TestSubtitleParser(unittest.TestCase):
         desired_valid_hot_words.sort()
         recieved_valid_hot_words.sort()
 
+        print('Desired', desired_valid_hot_words)
+        print('Recieved', recieved_valid_hot_words)
         self.assertEqual(desired_valid_hot_words, recieved_valid_hot_words)
