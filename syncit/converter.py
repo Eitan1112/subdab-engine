@@ -52,7 +52,10 @@ class Converter():
         path = os.path.join(self.tmpdir, filename)
         logger.debug(f'Converting base64 to file. path: {path}')
         with open(path, 'wb') as f:
-            f.write(base64.b64decode(base64str))
+            try:
+                f.write(base64.b64decode(base64str))
+            except Exception as e:
+                logger.error(f'Unable to decode base64 string. Error: {e}')
 
         return path
 
@@ -73,11 +76,15 @@ class Converter():
 
         audio_filename = f'Temporary.wav'
         audio_path = os.path.join(self.tmpdir, audio_filename)
-        audio = AudioFileClip(self.video)
 
-        # Convert
-        audio.write_audiofile(audio_path)
-        return audio_path
+        try:
+            # Convert
+            audio = AudioFileClip(self.video)
+            audio.write_audiofile(audio_path)
+            return audio_path
+        except Exception as e:
+            logger.error(
+                f'Unable to create audio clip from video file. Path: {self.video}')
 
     def convert_video_to_text(self, start=None, end=None):
         """
@@ -93,29 +100,29 @@ class Converter():
         """
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            audio_filename = f'{end}{start}.wav'
+            audio_filename = f'Temporary.wav'
 
             audio_path = os.path.join(tmpdir, audio_filename)
-            logger.debug(f'Audio Path: {audio_path}')
-            logger.debug(f'Video Path: {self.video}')
 
-            audio = AudioFileClip(self.video)
+            try:
+                audio = AudioFileClip(self.video)
 
-            # Validate start and end times
+                # Create subclip with the desired length and get transcript
+                logger.debug(f'Writing to audio file {audio_path}')
+                if(start and end):
+                    if(start < 0):
+                        start = 0
+                    if(end > audio.duration):
+                        end = audio.duration
+                    audio.subclip(start, end).write_audiofile(audio_path)
+                else:
+                    audio.write_audiofile(audio_path)
 
-            # Create subclip with the desired length and get transcript
-            logger.debug(f'Writing to audio file {audio_path}')
-            if(start and end):
-                if(start < 0):
-                    start = 0
-                if(end > audio.duration):
-                    end = audio.duration
-                audio.subclip(start, end).write_audiofile(audio_path)
-            else:
-                audio.write_audiofile(audio_path)
-
-            transcript = self.convert_audio_to_text(audio_path)
-            return transcript
+                transcript = self.convert_audio_to_text(audio_path)
+                return transcript
+            except Exception as e:
+                logger.error(
+                    f'Error while converting video to text. Error: {e}')
 
     def convert_audio_to_text(self, audio_path: str, start=None, end=None, hot_word=None):
         """
@@ -132,7 +139,6 @@ class Converter():
         """
 
         recognizer = sr.Recognizer()
-
         audio_file = sr.AudioFile(audio_path)
 
         with audio_file as source:

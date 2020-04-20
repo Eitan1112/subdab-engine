@@ -63,11 +63,8 @@ def convert_subs_time(subs_time: str):
             int(seconds) + int(miliseconds) / 1000
 
         return time
-
     except:
-        logger.error(f'Wrong time format in subtitles. Recieved: {subs_time}')
-        raise Exception(
-            f'Wrong time format in subtitles. Recieved: {subs_time}')
+        logger.warning(f'Wrong time format in subtitles. Recieved: {subs_time}')
 
 
 def list_rindex(li: list, x: object):
@@ -85,7 +82,7 @@ def list_rindex(li: list, x: object):
     for i in reversed(range(len(li))):
         if(li[i] == x):
             return i
-    raise ValueError(f"{x} is not in list")
+    logger.warning(f'{i} is not in the list (rindex_list).')
 
 
 def need_to_abort(sections_occurences: list, word: str, is_first_run: bool):
