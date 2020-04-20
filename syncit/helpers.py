@@ -21,7 +21,6 @@ def clean_text(original_text: str):
         str: Cleaned up text.
     """
 
-
     text = original_text
 
     text = text.replace('\n', ' ')
@@ -30,11 +29,12 @@ def clean_text(original_text: str):
     tags = re.findall(r'((?:<|\[|\(|\*|\{).+?(?:>|\)|}|]|\*))', text)
     for tag in tags:
         text = text.replace(tag, '')
-        
+
     text = text.lower()
-    text = text.translate(str.maketrans('', '', string.punctuation)) # Remove punctuations
+    text = text.translate(str.maketrans(
+        '', '', string.punctuation))  # Remove punctuations
     text = text.replace('♪', '').replace('â™ª', '')
-    text = re.sub(' +', ' ', text) # Replace multiple whitespaces in one
+    text = re.sub(' +', ' ', text)  # Replace multiple whitespaces in one
     text = text.strip()
 
     return text
@@ -53,67 +53,21 @@ def convert_subs_time(subs_time: str):
 
     try:
         subs_splitted = subs_time.split(':')
-        
+
         hours = subs_splitted[0]
         minutes = subs_splitted[1]
         seconds = subs_splitted[2].split(',')[0]
         miliseconds = subs_splitted[2].split(',')[1]
 
-        time = int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(miliseconds) / 1000
+        time = int(hours) * 3600 + int(minutes) * 60 + \
+            int(seconds) + int(miliseconds) / 1000
 
         return time
-    
+
     except:
         logger.error(f'Wrong time format in subtitles. Recieved: {subs_time}')
-        raise Exception(f'Wrong time format in subtitles. Recieved: {subs_time}')
-
-
-def convert_seconds_time(seconds: int):
-    """
-    Convert seconds time to subtitles time.
-
-    Params:
-        seconds (int): Seconds to convert.
-
-    Returns:
-        str: subtitles format time. (e.g: 00:00:06,181 --> 00:00:08,383)
-    """
-    
-    if(seconds > 362439.999):
-        logger.error('Failed to convert seconds time. Number too large.')
-        raise Exception('Failed to convert seconds time. Number too large.')
-
-    hours = str(int(seconds / 3600)).zfill(2)
-    seconds = seconds % 3600
-
-    minutes = str(int(seconds / 60)).zfill(2)
-    seconds = seconds % 60
-
-    miliseconds = str(int(round(seconds % 1, 3) * 1000)).zfill(3)
-    seconds = str(int(seconds)).zfill(2)
-    
-    time = f'{hours}:{minutes}:{seconds},{miliseconds}'
-
-    return time
-
-
-        
-def add_delay(time: str, delay: float):
-    """
-    Adds delay in seconds to subtitles time.
-
-    Params:
-        time (str): time in subtitles format. (e.g.: 00:00:06,181)
-        delay (float): delay to add in seconds.
-
-    Returns:
-        str: time in subtitles format with the delay added.
-    """
-
-    time_in_seconds = convert_subs_time(time)
-    time_in_seconds += delay
-    new_time = convert_seconds_time(time_in_seconds)
-    return new_time
+        raise Exception(
+            f'Wrong time format in subtitles. Recieved: {subs_time}')
 
 
 def list_rindex(li: list, x: object):
@@ -149,14 +103,16 @@ def need_to_abort(sections_occurences: list, word: str, is_first_run: bool):
 
     # If there are positive results in more then 2 sections -> Abort
     if(sections_occurences.count(0) + 2 < len(sections_occurences)):
-        logger.debug(f"Word '{word}' more then 2 positive sections. Results: {sections_occurences} Aborting...")
+        logger.debug(
+            f"Word '{word}' more then 2 positive sections. Results: {sections_occurences} Aborting...")
         return True
 
     # If there are positive results in 2 sections
     if(sections_occurences.count(0) + 2 == len(sections_occurences)):
         # If one of the two positives is more then 1 time the word in the section -> Abort
         if(sections_occurences.count(1) != 2):
-            logger.debug(f"Word '{word}' one of the positives more then 1. Aborting...")
+            logger.debug(
+                f"Word '{word}' one of the positives more then 1. Aborting...")
             return True
 
         # If both the results are positives and 1's but they are not consecutive -> Abort
@@ -166,7 +122,8 @@ def need_to_abort(sections_occurences: list, word: str, is_first_run: bool):
 
     # If there are positive results in 1 section and this result is more then one and this is the first run -> Abort
     if(sections_occurences.count(0) + 1 == len(sections_occurences) and sections_occurences.count(1) == 0 and is_first_run):
-        logger.debug(f"Word '{word}' was more then one time in one section on the initial run. Aborting.")
+        logger.debug(
+            f"Word '{word}' was more then one time in one section on the initial run. Aborting.")
         return True
 
     logger.debug(f"Word '{word}' is good. {sections_occurences} Continuing..")
@@ -201,13 +158,13 @@ def parse_sections_occurences_results(sections_occurences: list):
             return 0
 
     # Word not found in any section.
-    elif(1 not in sections_occurences):            
+    elif(1 not in sections_occurences):
         # If the current timespan is divided to 2 sections -> check middle section
         if(len(sections_occurences) == 2):
             return 3
         # The current timespan is divided to more then 2 sections -> abort
         else:
             return 0
-    
+
     # Word found in exactly one section
     return 2

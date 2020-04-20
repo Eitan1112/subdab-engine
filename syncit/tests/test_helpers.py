@@ -53,27 +53,6 @@ class TestChecker(unittest.TestCase):
         time = convert_subs_time(sample_time)
         self.assertEqual(time, 8406.181)
     
-
-    def test_convert_seconds_time(self):
-        """
-        Test for testing the convert_seeconds_time method.
-        """
-
-        sample_time = 8406.181
-        time = convert_seconds_time(sample_time)
-        self.assertEqual(time, '02:20:06,181')
-
-
-    def test_add_delay(self):
-        """
-        Test for testing the add_delay method.
-        """
-
-        sample_time = '02:20:06,181'
-        delay = 2150
-        new_time = add_delay(sample_time, delay)
-        self.assertEqual(new_time, '02:55:56,181')
-
         
     def test_list_rindex(self):
         """
