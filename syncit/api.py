@@ -41,12 +41,7 @@ def check_sync():
         checker = SyncChecker(extension, data)
         logger.debug('Check initiated, check is_synced')
         is_synced = checker.check_is_synced()
-        if(is_synced):
-            return Response(json.dumps({'is_synced': is_synced}), 200)
-        else:
-            start = 0
-            end = Constants.DELAY_CHECKER_SECTIONS_TIME + Constants.DELAY_RADIUS
-            return Response(json.dumps({'is_synced': False, 'send_timestamp': {'start': start, 'end': end}}), 200)
+        return Response(json.dumps({'is_synced': is_synced}), 200)
 
     except Exception as e:
         logger.error(f'Error in check_sync. Error: {e}')
@@ -69,7 +64,7 @@ def check_delay():
             'subtitles': SubtitlesFile
 
         If delay not found:
-            'send_timestamps': Next Timestamps
+            Empty dict.
     """
     
     logger.info('Checking delay.')
@@ -85,9 +80,7 @@ def check_delay():
         delay = dc.check_delay_in_timespan()
 
         if(delay is None):
-            start = timestamp['start'] + Constants.DELAY_CHECKER_SECTIONS_TIME
-            end = timestamp['end'] + Constants.DELAY_CHECKER_SECTIONS_TIME
-            return Response(json.dumps({'send_timestamp': {'start': start, 'end': end}}), 200)
+            return Response(json.dumps({}), 200)
 
         else:
             return Response(json.dumps({ 'delay': delay }), 200)
