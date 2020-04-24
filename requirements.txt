@@ -2,3 +2,5 @@ MoviePy
 PocketSphinx
 SpeechRecognition
 filetype
+flask
+flask_cors

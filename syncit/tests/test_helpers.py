@@ -69,9 +69,6 @@ class TestChecker(unittest.TestCase):
 
         x_rindex = list_rindex(sample_list, 'x')
         self.assertEqual(x_rindex, 5)
-
-        with self.assertRaises(ValueError):
-            p_rindex = list_rindex(sample_list, 'p')
         
 
     def test_need_to_abort(self):

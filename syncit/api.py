@@ -1,6 +1,7 @@
 from flask import Flask, request, Response
 from flask_cors import CORS, cross_origin
 import json
+import os
 from syncit.delay_checker import DelayChecker
 from syncit.constants import Constants
 from syncit.sync_checker import SyncChecker
@@ -11,12 +12,12 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
 
+# On prod the nginx configuration takes care of the CORS
+if(os.environ['Environment'] == 'dev'):
+    CORS(app)
 
 @app.route('/check_sync', methods=['POST'])
-@cross_origin()
 def check_sync():
     """
     Route to check if buffers and subtitles are synced or not.
