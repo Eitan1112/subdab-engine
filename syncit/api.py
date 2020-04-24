@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # On prod the nginx configuration takes care of the CORS
-if(os.environ['Environment'] == 'dev'):
+if(os.environ.get('Environment') == 'dev'):
     CORS(app)
 
 @app.route('/check_sync', methods=['POST'])
