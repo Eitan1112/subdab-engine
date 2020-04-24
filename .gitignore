@@ -3,4 +3,6 @@ media
 logs/*
 graveyard
 synced.srt
-venv
+syncitenv
+syncit.sock
+syncit.ini
