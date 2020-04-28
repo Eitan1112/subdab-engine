@@ -49,7 +49,6 @@ class Converter():
             str: Path to video file.
         """
 
-        # TODO #8 Find Format Aloneee
         filename = f'{uuid.uuid4().hex[:10]}.{extension}'
         path = os.path.join(self.tmpdir, filename)
         logger.debug(f'Converting base64 to file. path: {path}')
@@ -111,7 +110,7 @@ class Converter():
 
                 # Create subclip with the desired length and get transcript
                 logger.debug(f'Writing to audio file {audio_path}')
-                if(start and end):
+                if(start is not None and end is not None):
                     if(start < 0):
                         start = 0
                     if(end > audio.duration):
@@ -144,7 +143,7 @@ class Converter():
         audio_file = sr.AudioFile(audio_path)
 
         with audio_file as source:
-            if(start and end):
+            if(start is not None and end is not None):
                 duration = end - start
                 audio = recognizer.record(
                     source, offset=start, duration=duration)
