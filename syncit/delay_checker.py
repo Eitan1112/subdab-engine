@@ -5,7 +5,7 @@ from moviepy.editor import VideoFileClip
 from itertools import repeat
 import logging
 from logger_setup import setup_logging
-from syncit.helpers import clean_text, parse_sections_occurences_results, need_to_abort
+from syncit.helpers import clean_text
 from syncit.subtitle_parser import SubtitleParser
 from syncit.converter import Converter
 from difflib import SequenceMatcher
@@ -117,13 +117,13 @@ class DelayChecker():
             audio_path, hot_word, transcript_start, transcript_end)
 
         # If the hot word is one time in the audio transcript, check when is it said. Else, return None
-        if(hot_word_in_transcript >= 1 and hot_word_in_transcript <= Constants.MAX_OCCURENCES_TO_CHECK):
+        if(hot_word_in_transcript >= 1):
             logger.debug(
                 f"Word '{hot_word}' is in timespan. Checking the time...")
 
             # Gets the word start time
             word_start_time = self.get_word_time(
-                audio_path, hot_word, transcript_start, transcript_end, Constants.INITIAL_DELAY_CHECK_STEP)
+                audio_path, hot_word, transcript_start, transcript_end)
 
             # If the get_word_time function couldn't find when the word is said, return None
             if(word_start_time is None):
@@ -154,6 +154,64 @@ class DelayChecker():
         else:
             return subs_delay
 
+
+    def get_word_time(self, audio_path: str, word: str, start: float, end: float):
+        """
+        Recursive function that gets a timestamp (with radius initially) and a word, and checks when that word is said in this timestamp.
+
+        Params:
+            audio_path (str): Path to audio file.
+            word (str): Word to check.
+            start (float): Start time in seconds.
+            end (float): End time in seconds.
+            step (float): What is the step in the for loop.
+
+        Returns:
+            float: Start time in seconds the word is said.
+        """
+
+        step = (end - start) / 4
+        if(end - start < 1.3): # TODO add to constants
+            logger.debug(f"Trimming small section. Word: '{word}'. Start: {start}. End: {end}")
+            return self.trim_small_section(audio_path, word, start, end)
+
+        for current_start in np.arange(start, end, step):
+            current_end = current_start + step
+            current_occurences = self.word_in_timespan_occurrences(audio_path, word, current_start, current_end)
+            logger.debug(f"Looping. Start: {start}. End: {end}. Step: {step}. current start: {current_start}. Current end: {current_end}. Word: '{word}' Occurences: {current_occurences}.")
+            if(current_occurences > 0):
+                logger.debug(f"Word is at least 1 time in the section. Word: '{word}'. Start: {current_start}. End: {current_end}")
+                time = self.get_word_time(audio_path, word, current_start, current_end)
+                if(time):
+                    logger.debug(f"Found word time. Word: '{word}'. Start: {current_start}. End: {current_end}. Time: {time}")
+                    return time
+            logger.debug(f"Unable to find word time. Word: '{word}'. Start: {current_start}. End: {current_end}")
+
+        
+
+    def trim_small_section(self, audio_path: str, word: str, start: float, end: float):
+        """ 
+        """
+        # TODO add docstring
+
+        step = 0.1 # TODO add to constants
+
+        for current_start in np.arange(start, end, step):
+            occurences = self.word_in_timespan_occurrences(audio_path, word, current_start, end)
+            logger.debug(f"Word: '{word}'. Start: {start}. End: {end}. Occurences: {occurences}")
+            if(occurences == 0):
+                return current_start - step
+
+
+
+
+
+
+
+
+
+
+
     def check_single_transcript(self, subtitles: str, start: float, end: float):
         """
         Checks the similarity ratio between subtitles and the video during a certain timespan based on the video path.
@@ -174,7 +232,7 @@ class DelayChecker():
             None, clean_transcript, subtitles).ratio()
 
         logger.debug(
-            f"""Subtitles: {subtitles} | Clean Subtitles: {subtitles} | Transcript: {clean_transcript} | Clean Transcript: {clean_transcript} | Similarity: {similarity_rate}""")
+            f"""Subtitles: {subtitles} | Hot Word: {subtitles.split()[0]} | Clean Subtitles: {subtitles} | Transcript: {clean_transcript} | Clean Transcript: {clean_transcript} | Similarity: {similarity_rate}. Start: {start}. End: {end}""")
 
         if(similarity_rate > Constants.MIN_ACCURACY):
             return True
@@ -194,137 +252,121 @@ class DelayChecker():
             int: Number of occurrences of word in transcript.
         """
 
-        transcript = self.converter.convert_audio_to_text(
-            audio_path, start, end, word)
+        transcript = self.converter.convert_video_to_text(
+            start, end, word)
 
         count = len(transcript.split())
         logger.debug(
             f"Checked occurrences of '{word}' in {start}-{end}. It is {count} times.")
         return count
 
-    def get_word_time(self, audio_path: str, word: str, start: float, end: float, step: float):
-        """
-        Recursive function that gets a timestamp and a word, and checks when that word is said in this timestamp.
 
-        Params:
-            audio_path (str): Path to audio file.
-            word (str): Word to check.
-            start (float): Start time in seconds.
-            end (float): End time in seconds.
-            step (float): What is the step in the for loop.
+    # def get_word_time(self, audio_path: str, word: str, start: float, end: float, step: float):
+    #     """
+    #     Recursive function that gets a timestamp and a word, and checks when that word is said in this timestamp.
 
-        Returns:
-            float: Start time in seconds the word is said.
-        """
-        # End of recursive function
-        if((end - start) <= Constants.MAXIMUM_WORD_LENGTH):
-            return start
+    #     Params:
+    #         audio_path (str): Path to audio file.
+    #         word (str): Word to check.
+    #         start (float): Start time in seconds.
+    #         end (float): End time in seconds.
+    #         step (float): What is the step in the for loop.
 
-        # Gets the results in this section
-        results = self.get_word_results_in_section(
-            audio_path, word, start, end, step)
-        if(results):
-            (sections_occurences, sections_timestamps) = results
-        else:
-            return None
+    #     Returns:
+    #         float: Start time in seconds the word is said.
+    #     """
+        
+    #     # End of recursive function
+    #     if((end - start) <= Constants.MAXIMUM_WORD_LENGTH):
+    #         return start
 
-        next_action = parse_sections_occurences_results(sections_occurences)
+    #     # Gets the results in this section
+    #     results = self.get_word_results_in_section(
+    #         audio_path, word, start, end, step)
+    #     if(results):
+    #         (sections_occurences, sections_timestamps) = results
+    #     else:
+    #         return None
 
-        logger.debug(
-            f"Section occurences: {sections_occurences}; Next Action: {next_action}")
-        # Action == Abort
-        if(next_action == 0):
-            return None
+    #     next_action = parse_sections_occurences_results(sections_occurences)
 
-        # Action - divide to three sections
+    #     logger.debug(
+    #         f"Section occurences: {sections_occurences}; Next Action: {next_action}")
+    #     # Action == Abort
+    #     if(next_action == 0):
+    #         return None
 
-        # Action - check middle section
-        elif(next_action == 3):
-            middle_start = start + (step / 3)
-            middle_end = end - (step / 3)
+    #     # Action - divide to three sections
 
-            # Calculate occurences and continue if found
-            occurences = self.word_in_timespan_occurrences(
-                audio_path, word, middle_start, middle_end)
-            if(occurences == 1):
-                new_step = (middle_end - middle_start) / 2
-                return self.get_word_time(audio_path, word, middle_start, middle_end, new_step)
+    #     # Action - check middle section
+    #     elif(next_action == 3):
+    #         middle_start = start + (step / 3)
+    #         middle_end = end - (step / 3)
 
-        # Action == Check single section
-        elif(next_action == 1 or next_action == 2):
-            # Word found in two consecutive inner-section
-            if(next_action == 1):
-                first_winning_section = sections_occurences.index(1)
-                winning_start = sections_timestamps[first_winning_section][0]
-                winning_end = sections_timestamps[first_winning_section + 1][1]
-                new_step = (winning_end - winning_start) / 4
+    #         # Calculate occurences and continue if found
+    #         occurences = self.word_in_timespan_occurrences(
+    #             audio_path, word, middle_start, middle_end)
+    #         if(occurences == 1):
+    #             new_step = (middle_end - middle_start) / 2
+    #             return self.get_word_time(audio_path, word, middle_start, middle_end, new_step)
 
-            # Word found in exactly one section exactly one time
-            elif(next_action == 2):
-                winning_section = sections_occurences.index(1)
-                (winning_start,
-                 winning_end) = sections_timestamps[winning_section]
-                new_step = (winning_end - winning_start) / 2
+    #     # Action == Check single section
+    #     elif(next_action == 1 or next_action == 2):
+    #         # Word found in two consecutive inner-section
+    #         if(next_action == 1):
+    #             first_winning_section = sections_occurences.index(1)
+    #             winning_start = sections_timestamps[first_winning_section][0]
+    #             winning_end = sections_timestamps[first_winning_section + 1][1]
+    #             new_step = (winning_end - winning_start) / 4
 
-            logger.debug(
-                f"Word '{word}' found in timestamp {winning_start}-{winning_end}.")
-            return self.get_word_time(audio_path, word, winning_start, winning_end, new_step)
+    #         # Word found in exactly one section exactly one time
+    #         elif(next_action == 2):
+    #             winning_section = sections_occurences.index(1)
+    #             (winning_start,
+    #              winning_end) = sections_timestamps[winning_section]
+    #             new_step = (winning_end - winning_start) / 2
 
-    def get_word_results_in_section(self, audio_path: str, word: str, start: float, end: float, step: float):
-        """
-        Gets a section and a word, and divides the section to inner-sections by the step, and searches
-        for the word inside each inner-section. Returns a list of the results and timestamps.
+    #         logger.debug(
+    #             f"Word '{word}' found in timestamp {winning_start}-{winning_end}.")
+    #         return self.get_word_time(audio_path, word, winning_start, winning_end, new_step)
 
-        Params:
-            audio_path (str): Path to audio file.
-            word (str): Word to check.
-            start (float): Start time in seconds.
-            end (float): End time in seconds.
-            step (float): What is the step in the for loop.
 
-        Returns:
-            tuple: (sections_occurences, sections_timestamps)
+    #     logger.debug(
+    #         f'Getting word time. Start:{start}; End: {end}; step: {step}.')
 
-            sections_occurences (list): List containing the results of how many times the word is in each inner-section.
-            sections_timestamps (list): List of tuples containing (start, end) for each inner-section in sections_occurences.
-        """
+    #     # Lists containg the results from all the sections and timestamps
+    #     sections_occurences = []
+    #     sections_timestamps = []
 
-        logger.debug(
-            f'Getting word time. Start:{start}; End: {end}; step: {step}.')
+    #     for current_start in np.arange(start, end, step):
 
-        # Lists containg the results from all the sections and timestamps
-        sections_occurences = []
-        sections_timestamps = []
+    #         current_end = current_start + step
 
-        for current_start in np.arange(start, end, step):
+    #         # Is on first run of the recursive function
+    #         is_on_first_run = step == Constants.INITIAL_DELAY_CHECK_STEP
 
-            current_end = current_start + step
+    #         # Only on the first run of the function add the ONE_WORD_AUDIO_TIME to the end.
+    #         if(is_on_first_run):
+    #             current_end += Constants.ONE_WORD_AUDIO_TIME
 
-            # Is on first run of the recursive function
-            is_on_first_run = step == Constants.INITIAL_DELAY_CHECK_STEP
+    #         # Make sure the last end is not larger then the given end.
+    #         if(current_end > end):
+    #             current_end = end
 
-            # Only on the first run of the function add the ONE_WORD_AUDIO_TIME to the end.
-            if(is_on_first_run):
-                current_end += Constants.ONE_WORD_AUDIO_TIME
+    #         logger.debug(
+    #             f"Word '{word}' calculating occurences. End: {current_end}")
+    #         occurrences = self.word_in_timespan_occurrences(
+    #             audio_path, word, current_start, current_end)
 
-            # Make sure the last end is not larger then the given end.
-            if(current_end > end):
-                current_end = end
+    #         # Append to lists
+    #         sections_occurences.append(occurrences)
+    #         sections_timestamps.append((current_start, current_end))
 
-            logger.debug(
-                f"Word '{word}' calculating occurences. End: {current_end}")
-            occurrences = self.word_in_timespan_occurrences(
-                audio_path, word, current_start, current_end)
+    #         # Perform a check to see if aborting
+    #         is_aborting = need_to_abort(
+    #             sections_occurences, word, is_on_first_run)
+    #         if(is_aborting):
+    #             return None
 
-            # Append to lists
-            sections_occurences.append(occurrences)
-            sections_timestamps.append((current_start, current_end))
-
-            # Perform a check to see if aborting
-            is_aborting = need_to_abort(
-                sections_occurences, word, is_on_first_run)
-            if(is_aborting):
-                return None
-
-        logger.debug(f"Word '{word}' ended loop.")
-        return (sections_occurences, sections_timestamps)
+    #     logger.debug(f"Word '{word}' ended loop.")
+    #     return (sections_occurences, sections_timestamps)

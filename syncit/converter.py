@@ -87,7 +87,7 @@ class Converter():
             logger.error(
                 f'Unable to create audio clip from video file. Path: {self.video}')
 
-    def convert_video_to_text(self, start=None, end=None):
+    def convert_video_to_text(self, start=None, end=None, hot_word=None):
         """
         Gets the transcript of the audio at a certain timespan.
         Cuts the video -> convert it to audio -> gets the transcript > remove audio.
@@ -95,6 +95,7 @@ class Converter():
         Params:
             start (float): Start time of the check.
             end (float): End time of the check.
+            hot_word (str): Hot word to look for.
 
         Returns:
             str: The transcript of this audio at this timespan.
@@ -119,7 +120,7 @@ class Converter():
                 else:
                     audio.write_audiofile(audio_path)
 
-                transcript = self.convert_audio_to_text(audio_path)
+                transcript = self.convert_audio_to_text(audio_path, hot_word=hot_word)
                 return transcript
             except Exception as e:
                 logger.error(
@@ -140,11 +141,12 @@ class Converter():
         """
 
         recognizer = sr.Recognizer()
-        audio_file = sr.AudioFile(audio_path)
+        audio_file = sr.AudioFile(audio_path)          
 
         with audio_file as source:
             if(start is not None and end is not None):
                 duration = end - start
+                print(f'Start: {start}. End: {end}. Duration: {duration}.')
                 audio = recognizer.record(
                     source, offset=start, duration=duration)
             else:

@@ -1,27 +1,21 @@
 class Constants():
-    APP_NAME = 'syncit'
-
-    SUPPORTED_VIDEO_FORMATS = ['mp4', 'm4v']
-    OFFSET_MANIPULATION = -0.1 # Seconds
-    DURATION_MANIPULATION = +0.3 # Seconds
-
     MIN_ACCURACY = 0.65
     SAMPLES_TO_CHECK = 20
     SAMPLES_TO_PASS = 0.2 # 0 to 1
 
     DELAY_RADIUS = 20 # Seconds
     
-    INITIAL_DELAY_CHECK_STEP = 5 # Seconds
+    INITIAL_DELAY_CHECK_STEP = 2 # Seconds
     MAXIMUM_WORD_LENGTH = 1 # Seconds
     DELAY_CHECK_DIVIDER = 2
 
     MAX_OCCURENCES_TO_CHECK = 3
 
-    ONE_WORD_AUDIO_TIME = 1.5 # How much seconds it takes to say one word (max)
+    ONE_WORD_AUDIO_TIME = 0.8 # How much seconds it takes to say one word (max)
 
     WORD_TIME_SECTIONS_DIVIDER = 8
 
-    DELAY_CHECKER_SECTIONS_TIME = 240 # In seconds
+    DELAY_CHECKER_SECTIONS_TIME = 200 # In seconds, have to be synced with frontend # TODO #39 Send it in frontend
 
     MULTIPROCESSING_MINIMUM_AUDIO_LENGTH = 1 # Seconds
 

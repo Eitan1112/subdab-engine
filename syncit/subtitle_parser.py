@@ -96,12 +96,53 @@ class SubtitleParser():
                 hot_word = subtitles.split()[0]
             except:
                 continue
-
+            
             # Don't check popular hot words, waste of time
             if(hot_word in Constants.COMMON_WORDS_UNSUITABLE_FOR_DETECTION):
+                continue
+
+            # Make sure the word is only one time in the radius
+            word_occurences_in_timespan = self.check_word_occurences_in_timespan(
+                hot_word, subtitles_start - Constants.DELAY_RADIUS, subtitles_start + Constants.DELAY_RADIUS)
+            
+            if(word_occurences_in_timespan > 1):
                 continue
 
             valid_hot_words.append(
                 (hot_word, subtitles, subtitles_start, subtitles_end))
 
         return valid_hot_words
+
+    def check_word_occurences_in_timespan(self, word: str, start: float, end: float):
+        """
+        Checks the number of occurences of a word in a timespan.
+
+        Params:
+            word (str): The word to look for.
+            start (float): The start time.
+            end (float): End time.
+
+        Returns:
+            int: Occurences of the word in the timespan.
+        """
+
+        subs_length = len(self.re_subs)
+        occurences = 0
+
+        for sub in range(1, subs_length):
+
+            # Get the subtitles by index
+            (subtitles, subtitles_start, subtitles_end) = self.get_subtitles(sub)
+
+            # Skip to the start time
+            if(subtitles_start < start):
+                continue
+
+            # Reached the end
+            if(subtitles_end > end):
+                break
+
+            # Add the amount of times the word is said
+            occurences += subtitles.split().count(word)
+
+        return occurences
