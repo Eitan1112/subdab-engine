@@ -44,7 +44,7 @@ class SubtitleParser():
 
     def get_subtitles(self, index: int):
         """
-        Gets cleaned subtitles and the timespan of a specific index.
+        Gets cleaned subtitles and the timespan of a specific index in seconds.
 
         Params:
             index (int): Index
@@ -70,7 +70,7 @@ class SubtitleParser():
             end (float): end time.
 
         Returns:
-            list: A List of tuples containing: (hot word, subtitles, start, end).
+            tuple: A tuple of tuples containing: (hot word, subtitles, start, end).
         """
 
         valid_hot_words = []
@@ -111,7 +111,7 @@ class SubtitleParser():
             valid_hot_words.append(
                 (hot_word, subtitles, subtitles_start, subtitles_end))
 
-        return valid_hot_words
+        return tuple(valid_hot_words)
 
     def check_word_occurences_in_timespan(self, word: str, start: float, end: float):
         """

@@ -146,7 +146,6 @@ class Converter():
         with audio_file as source:
             if(start is not None and end is not None):
                 duration = end - start
-                print(f'Start: {start}. End: {end}. Duration: {duration}.')
                 audio = recognizer.record(
                     source, offset=start, duration=duration)
             else:

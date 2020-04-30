@@ -23,6 +23,7 @@ class DelayChecker():
         start (float): Start time of the video, compared to the larger video.
         end (float): End time of the video,compared to the larger video.
         sp (SubtitleParser): SubtitleParser object with the subtitles loaded.
+        hot_words (tuple): Hot words of this section.
     """
 
     def __init__(self, base64str: str, timestamp, subtitles: str, extension: str):
@@ -50,13 +51,13 @@ class DelayChecker():
         """
 
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
-        valid_hot_words = self.sp.get_valid_hot_words(self.start, self.end)
+        self.hot_words = self.sp.get_valid_hot_words(self.start, self.end)
 
         audio_path = self.converter.convert_video_to_audio()
 
         # Add to the start of each tuple in valid_hot_words the audio_path
         imap_args = [tuple([audio_path] + list(element))
-                     for element in valid_hot_words]
+                     for element in self.hot_words]
 
         delay = None
 
@@ -122,11 +123,11 @@ class DelayChecker():
                 f"Word '{hot_word}' is in timespan. Checking the time...")
 
             # Gets the word start time
-            word_start_time = self.get_word_time(
+            new_subtitles_start = self.get_word_time(
                 audio_path, hot_word, transcript_start, transcript_end)
 
             # If the get_word_time function couldn't find when the word is said, return None
-            if(word_start_time is None):
+            if(new_subtitles_start is None):
                 logger.debug(
                     f"Continuing - unable to find the hot word '{hot_word}' in the transcript.")
                 return
@@ -136,24 +137,52 @@ class DelayChecker():
                 f'Continuing - word is {hot_word_in_transcript} times in transcript, instead of 1.')
             return
 
-        # Only got here if we have the time the hot word is said.
+          # Only got here if we have the time the hot word is said.
         # Calculate the delay
-        new_subtitles_start = word_start_time
-        new_subtitles_end = subtitles_end - subtitles_start + new_subtitles_start
-        subs_delay = word_start_time - subtitles_start
+        delay = new_subtitles_start - subtitles_start
 
         # Verify the sync worked
         logger.debug(
-            f"Verifing the sync worked. Word: '{hot_word}'. Delay: {subs_delay}")
-        similarity_rate = self.check_single_transcript(
-            subtitles, new_subtitles_start, new_subtitles_end)
-        if(similarity_rate < Constants.MIN_ACCURACY):
-            logger.debug(f'Not accurate enough. Continuing.')
-            return
-
+            f"Verifing the sync worked. Word: '{hot_word}'. Delay: {delay}")
+        is_delay_verified = self.verify_delay(audio_path, delay)
+        if(is_delay_verified):
+            logger.debug(f"Found delay: {delay}. Word: '{hot_word}'.")
+            return delay
         else:
-            return subs_delay
+            logger.debug(
+                f"Word {hot_word} with delay {delay} not accuracte enough")
 
+    def verify_delay(self, audio_path: str, delay: float):
+        """
+        Checks if the delay is correct.
+
+        Params:
+            delay (float): The delay.
+
+        Returns:
+            bool: Whether the delay is correct or not.
+        """
+
+        similars = 0
+        unsimilars = 0
+
+        for hot_word_args in self.hot_words:
+            (hot_word, subtitles, subtitles_start, subtitles_end) = hot_word_args
+
+            transcript_start = subtitles_start + delay
+            transcript_end = subtitles_start + delay + Constants.ONE_WORD_AUDIO_TIME
+
+            occurences = self.word_in_timespan_occurrences(
+                audio_path, hot_word, transcript_start, transcript_end)
+
+            if(occurences > 0):
+                similars += 1
+            else:
+                unsimilars += 1
+
+            if(similars + unsimilars == Constants.VERIFY_DELAY_SAMPLES_TO_CHECK):
+                break
+        
 
     def get_word_time(self, audio_path: str, word: str, start: float, end: float):
         """
@@ -171,46 +200,43 @@ class DelayChecker():
         """
 
         step = (end - start) / 4
-        if(end - start < 1.3): # TODO add to constants
-            logger.debug(f"Trimming small section. Word: '{word}'. Start: {start}. End: {end}")
+        if(end - start <= Constants.SWITCH_TO_TRIMMING_ALGO_TIME):
+            logger.debug(
+                f"Trimming small section. Word: '{word}'. Start: {start}. End: {end}")
             return self.trim_small_section(audio_path, word, start, end)
 
         for current_start in np.arange(start, end, step):
-            current_end = current_start + step
-            current_occurences = self.word_in_timespan_occurrences(audio_path, word, current_start, current_end)
-            logger.debug(f"Looping. Start: {start}. End: {end}. Step: {step}. current start: {current_start}. Current end: {current_end}. Word: '{word}' Occurences: {current_occurences}.")
+            current_end = current_start + step + Constants.ONE_WORD_AUDIO_TIME
+            current_occurences = self.word_in_timespan_occurrences(
+                audio_path, word, current_start, current_end)
+            logger.debug(
+                f"Looping. Start: {start}. End: {end}. Step: {step}. current start: {current_start}. Current end: {current_end}. Word: '{word}' Occurences: {current_occurences}.")
             if(current_occurences > 0):
-                logger.debug(f"Word is at least 1 time in the section. Word: '{word}'. Start: {current_start}. End: {current_end}")
-                time = self.get_word_time(audio_path, word, current_start, current_end)
+                logger.debug(
+                    f"Word is at least 1 time in the section. Word: '{word}'. Start: {current_start}. End: {current_end}")
+                time = self.get_word_time(
+                    audio_path, word, current_start, current_end)
                 if(time):
-                    logger.debug(f"Found word time. Word: '{word}'. Start: {current_start}. End: {current_end}. Time: {time}")
+                    logger.debug(
+                        f"Found word time. Word: '{word}'. Start: {current_start}. End: {current_end}. Time: {time}")
                     return time
-            logger.debug(f"Unable to find word time. Word: '{word}'. Start: {current_start}. End: {current_end}")
-
-        
+            logger.debug(
+                f"Unable to find word time. Word: '{word}'. Start: {current_start}. End: {current_end}")
 
     def trim_small_section(self, audio_path: str, word: str, start: float, end: float):
         """ 
         """
         # TODO add docstring
 
-        step = 0.1 # TODO add to constants
+        step = 0.1  # TODO add to constants
 
         for current_start in np.arange(start, end, step):
-            occurences = self.word_in_timespan_occurrences(audio_path, word, current_start, end)
-            logger.debug(f"Word: '{word}'. Start: {start}. End: {end}. Occurences: {occurences}")
+            occurences = self.word_in_timespan_occurrences(
+                audio_path, word, current_start, end)
+            logger.debug(
+                f"Word: '{word}'. Start: {start}. End: {end}. Occurences: {occurences}")
             if(occurences == 0):
                 return current_start - step
-
-
-
-
-
-
-
-
-
-
 
     def check_single_transcript(self, subtitles: str, start: float, end: float):
         """
@@ -259,114 +285,3 @@ class DelayChecker():
         logger.debug(
             f"Checked occurrences of '{word}' in {start}-{end}. It is {count} times.")
         return count
-
-
-    # def get_word_time(self, audio_path: str, word: str, start: float, end: float, step: float):
-    #     """
-    #     Recursive function that gets a timestamp and a word, and checks when that word is said in this timestamp.
-
-    #     Params:
-    #         audio_path (str): Path to audio file.
-    #         word (str): Word to check.
-    #         start (float): Start time in seconds.
-    #         end (float): End time in seconds.
-    #         step (float): What is the step in the for loop.
-
-    #     Returns:
-    #         float: Start time in seconds the word is said.
-    #     """
-        
-    #     # End of recursive function
-    #     if((end - start) <= Constants.MAXIMUM_WORD_LENGTH):
-    #         return start
-
-    #     # Gets the results in this section
-    #     results = self.get_word_results_in_section(
-    #         audio_path, word, start, end, step)
-    #     if(results):
-    #         (sections_occurences, sections_timestamps) = results
-    #     else:
-    #         return None
-
-    #     next_action = parse_sections_occurences_results(sections_occurences)
-
-    #     logger.debug(
-    #         f"Section occurences: {sections_occurences}; Next Action: {next_action}")
-    #     # Action == Abort
-    #     if(next_action == 0):
-    #         return None
-
-    #     # Action - divide to three sections
-
-    #     # Action - check middle section
-    #     elif(next_action == 3):
-    #         middle_start = start + (step / 3)
-    #         middle_end = end - (step / 3)
-
-    #         # Calculate occurences and continue if found
-    #         occurences = self.word_in_timespan_occurrences(
-    #             audio_path, word, middle_start, middle_end)
-    #         if(occurences == 1):
-    #             new_step = (middle_end - middle_start) / 2
-    #             return self.get_word_time(audio_path, word, middle_start, middle_end, new_step)
-
-    #     # Action == Check single section
-    #     elif(next_action == 1 or next_action == 2):
-    #         # Word found in two consecutive inner-section
-    #         if(next_action == 1):
-    #             first_winning_section = sections_occurences.index(1)
-    #             winning_start = sections_timestamps[first_winning_section][0]
-    #             winning_end = sections_timestamps[first_winning_section + 1][1]
-    #             new_step = (winning_end - winning_start) / 4
-
-    #         # Word found in exactly one section exactly one time
-    #         elif(next_action == 2):
-    #             winning_section = sections_occurences.index(1)
-    #             (winning_start,
-    #              winning_end) = sections_timestamps[winning_section]
-    #             new_step = (winning_end - winning_start) / 2
-
-    #         logger.debug(
-    #             f"Word '{word}' found in timestamp {winning_start}-{winning_end}.")
-    #         return self.get_word_time(audio_path, word, winning_start, winning_end, new_step)
-
-
-    #     logger.debug(
-    #         f'Getting word time. Start:{start}; End: {end}; step: {step}.')
-
-    #     # Lists containg the results from all the sections and timestamps
-    #     sections_occurences = []
-    #     sections_timestamps = []
-
-    #     for current_start in np.arange(start, end, step):
-
-    #         current_end = current_start + step
-
-    #         # Is on first run of the recursive function
-    #         is_on_first_run = step == Constants.INITIAL_DELAY_CHECK_STEP
-
-    #         # Only on the first run of the function add the ONE_WORD_AUDIO_TIME to the end.
-    #         if(is_on_first_run):
-    #             current_end += Constants.ONE_WORD_AUDIO_TIME
-
-    #         # Make sure the last end is not larger then the given end.
-    #         if(current_end > end):
-    #             current_end = end
-
-    #         logger.debug(
-    #             f"Word '{word}' calculating occurences. End: {current_end}")
-    #         occurrences = self.word_in_timespan_occurrences(
-    #             audio_path, word, current_start, current_end)
-
-    #         # Append to lists
-    #         sections_occurences.append(occurrences)
-    #         sections_timestamps.append((current_start, current_end))
-
-    #         # Perform a check to see if aborting
-    #         is_aborting = need_to_abort(
-    #             sections_occurences, word, is_on_first_run)
-    #         if(is_aborting):
-    #             return None
-
-    #     logger.debug(f"Word '{word}' ended loop.")
-    #     return (sections_occurences, sections_timestamps)
