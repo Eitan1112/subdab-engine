@@ -18,8 +18,9 @@ class Constants():
     WORD_TIME_SECTIONS_DIVIDER = 8
 
     DELAY_CHECKER_SECTIONS_TIME = 200 # In seconds, have to be synced with frontend # TODO #39 Send it in frontend
+    CHECKED_DELAY_ARRAY_SIZE = 200
 
-    VERIFY_DELAY_SAMPLES_TO_CHECK = 12
+    VERIFY_DELAY_SAMPLES_TO_CHECK = 10
     VERIFY_DELAY_SAMPLES_TO_PASS = 3
 
     TRIM_SECTION_STEP = 0.9

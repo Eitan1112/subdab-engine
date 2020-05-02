@@ -25,7 +25,6 @@ class DelayChecker():
         sp (SubtitleParser): SubtitleParser object with the subtitles loaded.
         hot_words (tuple): Hot words of this section.
         audio_path (str): Path to audio file of this section
-        delays_checked (list): The delays already started checking / checked and are false.
     """
 
     def __init__(self, base64str: str, timestamp, subtitles: str, extension: str):
@@ -43,7 +42,6 @@ class DelayChecker():
         self.start = timestamp['start']
         self.end = timestamp['end']
         self.sp = SubtitleParser(subtitles)
-        self.delays_checked = []
 
     def check_delay_in_timespan(self):
         """
@@ -55,7 +53,9 @@ class DelayChecker():
 
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
         self.hot_words = self.sp.get_valid_hot_words(self.start, self.end)
+        logger.debug(f"Hot words: {self.hot_words}")
 
+        logger.debug(f"Converting (check_delay_in_timespan): Start: {self.start}. End: {self.end}") # TODO Remove
         self.audio_path = self.converter.convert_video_to_audio()
 
         delay = None
@@ -94,7 +94,7 @@ class DelayChecker():
                 end (int): end time in seconds of the subtitles.
 
         Returns:
-            int: The delay. (None if couldn't find)
+            int: The delay. (None fif couldn't find)
         """
 
         (hot_word, subtitles, start, end) = args
@@ -112,7 +112,8 @@ class DelayChecker():
             transcript_start = 0
 
         # Gets number of times the hot word is in the audio transcript of the radius time
-        hot_word_in_transcript = self.word_in_timespan_occurrences(hot_word, transcript_start, transcript_end)
+        hot_word_in_transcript = self.word_in_timespan_occurrences(
+            hot_word, transcript_start, transcript_end)
 
         # If the hot word is one time in the audio transcript, check when is it said. Else, return None
         if(hot_word_in_transcript == 0):
@@ -123,7 +124,8 @@ class DelayChecker():
             f"Word '{hot_word}' is in timespan. Checking the time...")
 
         # Gets the word start time
-        new_subtitles_start = self.get_word_time(hot_word, transcript_start, transcript_end, subtitles_start)
+        new_subtitles_start = self.get_word_time(
+            hot_word, transcript_start, transcript_end, subtitles_start)
 
         # If the get_word_time function couldn't find when the word is said, return None
         if(new_subtitles_start is None):
@@ -149,13 +151,12 @@ class DelayChecker():
 
         similars = 0
         unsimilars = 0
-        self.delays_checked.append(delay)
 
         for hot_word_args in self.hot_words:
             (hot_word, subtitles, subtitles_start, subtitles_end) = hot_word_args
 
-            transcript_start = subtitles_start + delay
-            transcript_end = subtitles_start + delay + Constants.ONE_WORD_AUDIO_TIME
+            transcript_start = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + delay
+            transcript_end = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + delay + Constants.ONE_WORD_AUDIO_TIME
 
             occurences = self.word_in_timespan_occurrences(
                 hot_word, transcript_start, transcript_end)
@@ -169,7 +170,7 @@ class DelayChecker():
                     f"Hot word '{hot_word}' added to unsimilars in delay {delay}")
                 unsimilars += 1
 
-            if(similars > Constants.VERIFY_DELAY_SAMPLES_TO_PASS):
+            if(similars >= Constants.VERIFY_DELAY_SAMPLES_TO_PASS):
                 return True
 
             if(unsimilars >= Constants.VERIFY_DELAY_SAMPLES_TO_CHECK - Constants.VERIFY_DELAY_SAMPLES_TO_PASS):
@@ -197,7 +198,25 @@ class DelayChecker():
         if(end - start <= Constants.SWITCH_TO_TRIMMING_ALGO_TIME):
             logger.debug(
                 f"Trimming small section. Word: '{word}'. Start: {start}. End: {end}")
-            return self.trim_small_section(word, start, end)
+            trimmed_word_time =  self.trim_small_section(word, start, end)
+
+            # If the trimming didn't return a valid time
+            if(trimmed_word_time is None):
+                return None
+
+            # Calculate the delay
+            delay = trimmed_word_time - subtitles_start
+
+            # Verify delay
+            logger.debug(f"Verifing sync. Word: '{word}'. Delay: {delay}.")
+            is_delay_verified = self.verify_delay(delay)
+            if(is_delay_verified):
+                logger.debug(f"Found delay: {delay}. Word: '{word}'.")
+                return trimmed_word_time
+            else:
+                logger.debug(
+                    f"Word '{word}' with delay {delay} not accuracte enough")
+                return None
 
         # Loop through the sections
         for current_start in np.arange(start, end, step):
@@ -221,30 +240,9 @@ class DelayChecker():
                 word, current_start, current_end, subtitles_start)
 
             # If couldn't find time -> Abort
-            if(time is None):
-                continue
-
-            # Calculate the delay
-            delay = time - subtitles_start
-
-            is_already_checked = any(abs(
-                delay - checked_delay) <= Constants.CHECKED_DELAY_RADIUS for checked_delay in self.delays_checked)
-            logger.debug(
-                f"Verifing sync. Word: '{word}'. Delay: {delay}. Delays_Checked: {self.delays_checked}")
-            # If already checked delay -> Abort
-            if(is_already_checked):
-                logger.debug(
-                    f"Delay {delay} of word '{word}' is already checked.'")
-                continue
-
-            # Verify delay
-            is_delay_verified = self.verify_delay(delay)
-            if(is_delay_verified):
-                logger.debug(f"Found delay: {delay}. Word: '{word}'.")
+            if(time is not None):
                 return time
-            else:
-                logger.debug(
-                    f"Word '{word}' with delay {delay} not accuracte enough")
+            
 
     def trim_small_section(self, word: str, start: float, end: float, step=Constants.TRIM_SECTION_STEP):
         """ 
@@ -261,7 +259,8 @@ class DelayChecker():
             float: The time after trimming the beginning.
         """
 
-        logger.debug(f"Word '{word}' started trimming. Start: {start}. End: {end}. Step: {step}.")
+        logger.debug(
+            f"Word '{word}' started trimming. Start: {start}. End: {end}. Step: {step}.")
         for current_start in np.arange(start, end, step):
             occurences = self.word_in_timespan_occurrences(
                 word, current_start, end)
@@ -276,17 +275,17 @@ class DelayChecker():
                                                end, step / Constants.TRIM_SECTION_STEP_DIVIDER)
             # Calculate the final word time
             word_start = current_start - step
-            
-            # Make sure that the word is actually said by checking a small section
-            occurences = self.word_in_timespan_occurrences(
-                word, word_start, word_start + Constants.ONE_WORD_AUDIO_TIME)
 
-            if(occurences != 0):
-                logger.debug(f"Word '{word}' found time! Time: {word_start}")
-                return word_start
-            else:
-                logger.debug(f"Word '{word}' was false positive and detected.")
-                return None
+            # Make sure that the word is actually said by checking a smaller section
+            if(end - word_start > Constants.ONE_WORD_AUDIO_TIME):
+                occurences = self.word_in_timespan_occurrences(
+                    word, word_start, word_start + Constants.ONE_WORD_AUDIO_TIME)
+                if(occurences == 0):
+                    logger.debug(f"Word '{word}' was false positive and detected.")
+                    return None
+
+            logger.debug(f"Word '{word}' found time! Time: {word_start}")
+            return word_start
 
     def check_single_transcript(self, subtitles: str, start: float, end: float):
         """
@@ -301,6 +300,7 @@ class DelayChecker():
             Boolean: Whether the video and subtitles are synced or not.
         """
 
+        logger.debug(f"Converting (check_single_transcript): Start: {start}. End: {end}") # TODO Remove
         transcript = self.converter.convert_video_to_text(start, end)
         clean_transcript = clean_text(transcript)
 
@@ -326,7 +326,8 @@ class DelayChecker():
         Returns:
             int: Number of occurrences of word in transcript.
         """
-
+        
+        logger.debug(f"Converting (word_in_timespan_occurrences): Start: {start}. End: {end}") # TODO Remove
         transcript = self.converter.convert_video_to_text(
             start, end, word)
 
