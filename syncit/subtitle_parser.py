@@ -100,6 +100,10 @@ class SubtitleParser():
             # Don't check popular hot words, waste of time
             if(hot_word in Constants.COMMON_WORDS_UNSUITABLE_FOR_DETECTION):
                 continue
+                
+            # Don't take numbers as hot words
+            if(hot_word.replace('.', '', 1).isdigit()): # The replace is if the number is a float
+                continue
 
             # Make sure the word is only one time in the radius
             word_occurences_in_timespan = self.check_word_occurences_in_timespan(

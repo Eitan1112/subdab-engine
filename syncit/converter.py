@@ -6,6 +6,7 @@ import shutil
 import os
 import base64
 import uuid
+import psutil
 import speech_recognition as sr
 from syncit.constants import Constants
 import logging
@@ -172,5 +173,9 @@ class Converter():
         Deletes the temporary folder, if created.
         """
 
+        
         if(self.tmpdir):
-            shutil.rmtree(self.tmpdir)
+            try:
+                shutil.rmtree(self.tmpdir)
+            except:
+                logger.warning(f'Unable to clean up.')
