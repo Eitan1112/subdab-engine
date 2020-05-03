@@ -26,24 +26,24 @@ class Converter():
         tmpdir (str): Persistent temporary folder (if created).
     """
 
-    def __init__(self, base64str: str, extension: str):
+    def __init__(self, video_file, extension: str):
         """
         Constructor of Converter.
 
         Params:
-            base64str (str): Base64 string of the file.
+            video_file (FileStorage): Object with the video file loaded.
             extension (str): The file extension.
         """
 
         self.tmpdir = tempfile.mkdtemp()
-        self.video = self.convert_base64_to_file(base64str, extension)
+        self.video = self.convert_filestorage_to_file(video_file, extension)
 
-    def convert_base64_to_file(self, base64str: str, extension: str):
+    def convert_filestorage_to_file(self, video_file, extension: str):
         """
-        Converts base64 string to a file. Stores it in temporary location and returns it's path.
+        Converts FileStorage object to a file. Stores it in temporary location and returns it's path.
 
         Params:
-            base64 (str): Base64 string.
+            video_file (FileStorage): Object with the video file loaded.
             extension (str): The file extension.
 
         Returns:
@@ -52,12 +52,12 @@ class Converter():
 
         filename = f'{uuid.uuid4().hex[:10]}.{extension}'
         path = os.path.join(self.tmpdir, filename)
-        logger.debug(f'Converting base64 to file. path: {path}')
+        logger.debug(f'Converting FileStorage to file. path: {path}')
         with open(path, 'wb') as f:
             try:
-                f.write(base64.b64decode(base64str))
+                f.write(video_file.read())
             except Exception as e:
-                logger.error(f'Unable to decode base64 string. Error: {e}')
+                logger.error(f'Unable to convert FileStorage to file. Error: {e}')
 
         return path
 

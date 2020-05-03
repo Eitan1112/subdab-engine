@@ -19,7 +19,7 @@ class DelayChecker():
     Class to check the delay of subtitles and video file.
 
     Attributes:
-        converter (Converter): Converter with the base64 of the timestamp loaded.
+        converter (Converter): Converter with the video file of the timestamp loaded.
         start (float): Start time of the video, compared to the larger video.
         end (float): End time of the video,compared to the larger video.
         sp (SubtitleParser): SubtitleParser object with the subtitles loaded.
@@ -27,20 +27,21 @@ class DelayChecker():
         audio_path (str): Path to audio file of this section
     """
 
-    def __init__(self, base64str: str, timestamp, subtitles: str, extension: str):
+    def __init__(self, video_file, start: int, end: int, subtitles: str, extension: str):
         """
         Class to check the delay.
 
         Params:
-            base64str (str): Base64 string of the video to check.
-            timestamp (dict): Dictionary containing 'start' and 'end' attributes.
+            video_file (FileStorage): Object with the video file loaded.
+            start (int): Start time of the video.
+            end (int): End time of the video.
             subtitles (str): The subtitles string.
             extension (str): The extension.
         """
 
-        self.converter = Converter(base64str, extension)
-        self.start = timestamp['start']
-        self.end = timestamp['end']
+        self.converter = Converter(video_file, extension)
+        self.start = start
+        self.end = end
         self.sp = SubtitleParser(subtitles)
 
     def check_delay_in_timespan(self):
@@ -55,7 +56,6 @@ class DelayChecker():
         self.hot_words = self.sp.get_valid_hot_words(self.start, self.end)
         logger.debug(f"Hot words: {self.hot_words}")
 
-        logger.debug(f"Converting (check_delay_in_timespan): Start: {self.start}. End: {self.end}") # TODO Remove
         self.audio_path = self.converter.convert_video_to_audio()
 
         delay = None
@@ -300,7 +300,6 @@ class DelayChecker():
             Boolean: Whether the video and subtitles are synced or not.
         """
 
-        logger.debug(f"Converting (check_single_transcript): Start: {start}. End: {end}") # TODO Remove
         transcript = self.converter.convert_video_to_text(start, end)
         clean_transcript = clean_text(transcript)
 
@@ -327,7 +326,6 @@ class DelayChecker():
             int: Number of occurrences of word in transcript.
         """
         
-        logger.debug(f"Converting (word_in_timespan_occurrences): Start: {start}. End: {end}") # TODO Remove
         transcript = self.converter.convert_video_to_text(
             start, end, word)
 

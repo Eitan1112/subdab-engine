@@ -17,6 +17,7 @@ app = Flask(__name__)
 if(os.environ.get('Environment') == 'dev'):
     CORS(app)
 
+
 @app.route('/check_sync', methods=['POST'])
 def check_sync():
     """
@@ -55,8 +56,9 @@ def check_delay():
     Route to check the delay based on a timestamps.
 
     Request Params:
-        base64str: The buffer encoded as base64.
-        timestamp: {start: START, end: END}. Note that this is in comparison to the full video loaded on the client side.
+        file: FileStorage object with the video file.
+        start: The start time of the video.
+        end: The end time of the video.
         subtitles: The subtitles of this timestamps.
         extension: The extension of the video file.
 
@@ -67,27 +69,29 @@ def check_delay():
         If delay not found:
             Empty dict.
     """
-    
+
     logger.info('Checking delay.')
-    if(type(request.json) != dict):
-        return Response('Bad Request.', 400)
+    try:
+        start = int(request.form['start'])
+        end = int(request.form['end'])
+        subtitles = request.form['subtitles']
+        extension = request.form['extension']
+        video_file = request.files['file']
+    except:
+        return Response({'error': 'Bad Request'}, 400)
 
     try:
-        base64str = request.json['base64str']
-        timestamp = request.json['timestamp']
-        subtitles = request.json['subtitles']
-        extension = request.json['extension']
-        dc = DelayChecker(base64str, timestamp, subtitles, extension)
+        dc = DelayChecker(video_file, start, end, subtitles, extension)
         delay = dc.check_delay_in_timespan()
 
         if(delay is None):
             return Response(json.dumps({}), 200)
 
         else:
-            return Response(json.dumps({ 'delay': delay }), 200)
+            return Response(json.dumps({'delay': delay}), 200)
     except Exception as e:
         logger.error(f'Error in check_delay. Error: {e}')
-        return Response(json.dumps({ 'error': 'Internal Server Error.'}), 500)
+        return Response(json.dumps({'error': 'Internal Server Error.'}), 500)
 
 
 @app.errorhandler(404)
