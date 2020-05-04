@@ -65,21 +65,3 @@ def convert_subs_time(subs_time: str):
         return time
     except:
         logger.warning(f'Wrong time format in subtitles. Recieved: {subs_time}')
-
-
-def list_rindex(li: list, x: object):
-    """
-        Gets the last index of an item in an array.
-
-        Params:
-            li (list): The list.
-            x (object): The object to find the index of.
-
-        Returns:
-            int: The last index of x inside li.
-    """
-
-    for i in reversed(range(len(li))):
-        if(li[i] == x):
-            return i
-    logger.warning(f'{i} is not in the list (rindex_list).')

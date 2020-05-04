@@ -1,5 +1,5 @@
 import unittest
-from syncit.helpers import *
+from syncit.helpers import clean_text, convert_subs_time
 
 
 class TestChecker(unittest.TestCase):
@@ -52,49 +52,3 @@ class TestChecker(unittest.TestCase):
         sample_time = '02:20:06,181'
         time = convert_subs_time(sample_time)
         self.assertEqual(time, 8406.181)
-    
-        
-    def test_list_rindex(self):
-        """
-        Test for the list_rindex method.
-        """
-
-        sample_list = ['m', 'a', 'e', 'a', 'e', 'x']
-
-        e_rindex = list_rindex(sample_list, 'e')
-        self.assertEqual(e_rindex, 4)
-
-        a_rindex = list_rindex(sample_list, 'a')
-        self.assertEqual(a_rindex, 3)
-
-        x_rindex = list_rindex(sample_list, 'x')
-        self.assertEqual(x_rindex, 5)
-        
-
-    def test_need_to_abort(self):
-        """
-        Test for the need_to_abort method.
-        """
-
-        sample_word = 'sample_word'        
-        samples = [
-            # (Result, sections_occurences, word, is_first_run)
-            (True, [0,1,1,1,0], sample_word, False),
-            (True, [0,1,1,1,0], sample_word, True),
-            (True, [1,0,0,1,2], sample_word, False),
-            (True, [1,1,1], sample_word, True),
-            (True, [0,1,0,1,0,0], sample_word, True),
-            (True, [0,1,2,0,0], sample_word, True),
-            (True, [1,2], sample_word, False),
-            (True, [2,0,0,0], sample_word, True),
-            (False, [2,0,0,0], sample_word, False),
-            (False, [1,0,0,0,0], sample_word, False),
-            (False, [0], sample_word, False),
-            (False, [2], sample_word, False),
-            (False, [0,1,1,0], sample_word, False)
-        ]
-
-        for sample in samples:
-            (desired_result, sections_occurences, word, is_first_run) = sample
-            result = need_to_abort(sections_occurences, word, is_first_run)
-            self.assertEqual(result, desired_result, sample)
