@@ -3,6 +3,7 @@ import unittest
 import os
 from syncit.converter import Converter
 from syncit.constants import TestConstants
+from werkzeug.datastructures import FileStorage
 
 
 class TestConverter(unittest.TestCase):
@@ -15,9 +16,8 @@ class TestConverter(unittest.TestCase):
         Setup to run before each test.
         """
 
-        with open(TestConstants.SAMPLE_VIDEO_PATH, 'rb') as f:
-            data = f.read()
-        self.converter = Converter(base64.b64encode(data).decode('ascii'), 'mp4')
+        data = open(TestConstants.SAMPLE_VIDEO_PATH, 'rb')
+        self.converter = Converter(FileStorage(data), 'mp4')
 
     def test_convert_video_to_audio(self):
         """

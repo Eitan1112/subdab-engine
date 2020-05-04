@@ -84,9 +84,9 @@ class Converter():
             audio = AudioFileClip(self.video)
             audio.write_audiofile(audio_path)
             return audio_path
-        except Exception as e:
+        except Exception as err:
             logger.error(
-                f'Unable to create audio clip from video file. Path: {self.video}')
+                f'Unable to create audio clip from video file. Path: {self.video}. Error: {err}')
 
     def convert_video_to_text(self, start=None, end=None, hot_word=None):
         """

@@ -76,7 +76,6 @@ class SubtitleParser():
         valid_hot_words = []
 
         subs_length = len(self.re_subs)
-        logger.debug(f'Subs length: {subs_length}')
 
         for sub in range(1, subs_length):
 

@@ -49,7 +49,7 @@ class TestSubtitleParser(unittest.TestCase):
         start = TestConstants.SAMPLE_HOT_WORDS_START
         end = TestConstants.SAMPLE_HOT_WORDS_END
 
-        recieved_valid_hot_words = sp.get_valid_hot_words(start, end)
+        recieved_valid_hot_words = list(sp.get_valid_hot_words(start, end))
         desired_valid_hot_words.sort()
         recieved_valid_hot_words.sort()
 
