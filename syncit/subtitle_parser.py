@@ -37,7 +37,7 @@ class SubtitleParser():
 
         # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
         
-        pattern = r"(\d+)\r?\n?(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r?\n?((?:.+\r?\n?)*.+)"
+        pattern = r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)"
 
         re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
 
