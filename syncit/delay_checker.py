@@ -1,6 +1,7 @@
 from syncit.constants import Constants
 import multiprocessing as mp
 import numpy as np
+import random
 from moviepy.editor import VideoFileClip
 from itertools import repeat
 import logging
@@ -70,6 +71,7 @@ class DelayChecker():
                     break
             pool.close()
             pool.join()
+            pool.terminate()
 
         if(delay):
             logger.info(f"Found delay: {delay}")
@@ -99,17 +101,18 @@ class DelayChecker():
 
         (hot_word, subtitles, start, end) = args
 
-        # Calculate time inside audio file
         subtitles_start = start % Constants.DELAY_CHECKER_SECTIONS_TIME
-        subtitles_end = end % Constants.DELAY_CHECKER_SECTIONS_TIME
-
         # The extended radius to check for the hot word
         transcript_start = subtitles_start - Constants.DELAY_RADIUS
-        transcript_end = subtitles_end + Constants.DELAY_RADIUS
+        transcript_end = subtitles_start + Constants.DELAY_RADIUS
 
-        # Avoid negative start time
+        # Avoid negative start time, too high start time or too high end time
         if (transcript_start < 0):
             transcript_start = 0
+        if(transcript_start > self.end):
+            return
+        if(transcript_end > self.end):
+            transcript_end = self.end
 
         # Gets number of times the hot word is in the audio transcript of the radius time
         hot_word_in_transcript = self.word_in_timespan_occurrences(
@@ -151,8 +154,10 @@ class DelayChecker():
 
         similars = 0
         unsimilars = 0
+        hot_words = list(self.hot_words)
+        random.shuffle(hot_words)
 
-        for hot_word_args in self.hot_words:
+        for hot_word_args in hot_words:
             (hot_word, subtitles, subtitles_start, subtitles_end) = hot_word_args
 
             transcript_start = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + delay
@@ -329,6 +334,9 @@ class DelayChecker():
         transcript = self.converter.convert_video_to_text(
             start, end, word)
 
+        if(transcript is None or transcript == ''):
+            return 0
+            
         count = len(transcript.split())
         logger.debug(
             f"Checked occurrences of '{word}' in {start}-{end}. It is {count} times.")

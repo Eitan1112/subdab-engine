@@ -20,8 +20,8 @@ class Constants():
     DELAY_CHECKER_SECTIONS_TIME = 200 # In seconds, have to be synced with frontend
     CHECKED_DELAY_ARRAY_SIZE = 200
 
-    VERIFY_DELAY_SAMPLES_TO_CHECK = 10
-    VERIFY_DELAY_SAMPLES_TO_PASS = 3
+    VERIFY_DELAY_SAMPLES_TO_CHECK = 13
+    VERIFY_DELAY_SAMPLES_TO_PASS = 6
 
     TRIM_SECTION_STEP = 0.9
     TRIM_SECTION_STEP_DIVIDER = 3
@@ -84,3 +84,5 @@ class TestConstants(Constants):
     LONG_SAMPLE_WORD = 'stood'
     LONG_SAMPLE_WORD_TRANSCRIPT = 'stood a very old and very enchanted forest'
     LONG_SAMPLE_WORD_TIMESTAMP = (127.552, 131.721)
+
+    SAMPLES_PATH = r'media\samples'
