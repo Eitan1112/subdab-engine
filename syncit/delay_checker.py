@@ -25,22 +25,21 @@ class DelayChecker():
         end (float): End time of the video,compared to the larger video.
         sp (SubtitleParser): SubtitleParser object with the subtitles loaded.
         hot_words (tuple): Hot words of this section.
-        audio_path (str): Path to audio file of this section
     """
 
-    def __init__(self, video_file, start: int, end: int, subtitles: str, extension: str):
+    def __init__(self, audio_file, start: int, end: int, subtitles: str):
         """
         Class to check the delay.
 
         Params:
-            video_file (FileStorage): Object with the video file loaded.
+            audio_file (FileStorage): Object with the video file loaded.
             start (int): Start time of the video.
             end (int): End time of the video.
             subtitles (str): The subtitles string.
             extension (str): The extension.
         """
 
-        self.converter = Converter(video_file, extension)
+        self.converter = Converter(audio_file)
         self.start = start
         self.end = end
         self.sp = SubtitleParser(subtitles)
@@ -56,9 +55,6 @@ class DelayChecker():
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
         self.hot_words = self.sp.get_valid_hot_words(self.start, self.end)
         logger.debug(f"Hot words: {self.hot_words}")
-
-        self.audio_path = self.converter.convert_video_to_audio()
-
         delay = None
 
         with mp.Pool() as pool:
@@ -305,7 +301,7 @@ class DelayChecker():
             Boolean: Whether the video and subtitles are synced or not.
         """
 
-        transcript = self.converter.convert_video_to_text(start, end)
+        transcript = self.converter.convert_audio_to_text(start, end)
         clean_transcript = clean_text(transcript)
 
         similarity_rate = SequenceMatcher(
@@ -331,7 +327,7 @@ class DelayChecker():
             int: Number of occurrences of word in transcript.
         """
         
-        transcript = self.converter.convert_video_to_text(
+        transcript = self.converter.convert_audio_to_text(
             start, end, word)
 
         if(transcript is None or transcript == ''):

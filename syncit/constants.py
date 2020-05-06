@@ -29,6 +29,9 @@ class Constants():
 
     CHECKED_DELAY_RADIUS = 0.25
 
+    RECIEVED_AUDIO_FILE_EXTENSION = 'm4a'
+    DESIRED_AUDIO_FILE_EXTENSION = 'wav'
+
     MULTIPROCESSING_MINIMUM_AUDIO_LENGTH = 1 # Seconds
 
     COMMON_WORDS_UNSUITABLE_FOR_DETECTION = ['the', 'of', 'to', 'and', 'a', 'in', 'is', 'it', 'you', 'that', 'he', 'was', 

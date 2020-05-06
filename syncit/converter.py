@@ -10,6 +10,7 @@ import psutil
 import speech_recognition as sr
 from syncit.constants import Constants
 import logging
+from syncit.constants import Constants
 from logger_setup import setup_logging
 
 
@@ -22,23 +23,23 @@ class Converter():
     Class designed to make all the conversions and merges between video and audio.
 
     Attributes:
-        video (str): Path to video file.
+        audio (str): Path to audio file.
         tmpdir (str): Persistent temporary folder (if created).
     """
 
-    def __init__(self, video_file, extension: str):
+    def __init__(self, audio_file):
         """
         Constructor of Converter.
 
         Params:
-            video_file (FileStorage): Object with the video file loaded.
-            extension (str): The file extension.
+            audio_file (FileStorage): Object with the video file loaded.
         """
 
         self.tmpdir = tempfile.mkdtemp()
-        self.video = self.convert_filestorage_to_file(video_file, extension)
+        self.audio = self.convert_filestorage_to_file(audio_file)
+        self.repair_audio_file()
 
-    def convert_filestorage_to_file(self, video_file, extension: str):
+    def convert_filestorage_to_file(self, audio_file):
         """
         Converts FileStorage object to a file. Stores it in temporary location and returns it's path.
 
@@ -50,89 +51,45 @@ class Converter():
             str: Path to video file.
         """
 
-        filename = f'{uuid.uuid4().hex[:10]}.{extension}'
+        filename = f'{uuid.uuid4().hex[:10]}.{Constants.RECIEVED_AUDIO_FILE_EXTENSION}'
         path = os.path.join(self.tmpdir, filename)
         logger.debug(f'Converting FileStorage to file. path: {path}')
         with open(path, 'wb') as f:
             try:
-                f.write(video_file.read())
+                f.write(audio_file.read())
             except Exception as e:
                 logger.error(f'Unable to convert FileStorage to file. Error: {e}')
-
+        
+        logger.debug(f'Finished converting FileStorage to file.')
         return path
 
-    def convert_video_to_audio(self):
+    def repair_audio_file(self):
         """
-        Converts the video file to audio file. (wav format).
-        Creates a temporary folder if doesn't exists.
+        Repairs the audio file loaded in self.audio
+        The frontend gives compressed audio file, moviepy can create a new repaired file
+        that will work with the speech recognition.
 
-        Returns:
-            str: Path to audio file. 
+        Re sets the path.
         """
-
-        logger.debug(f"Converting video to audio.")
-
-        # If there isn't a temporary folder, create one.
-        if(self.tmpdir is None):
-            self.tmpdir = tempfile.mkdtemp()
-
-        audio_filename = f'Temporary.wav'
-        audio_path = os.path.join(self.tmpdir, audio_filename)
-
+        
+        logger.debug('Repairing audio file')
+        clip = AudioFileClip(self.audio)
+        filename = f'{uuid.uuid4().hex[:10]}.{Constants.DESIRED_AUDIO_FILE_EXTENSION}'
+        path = os.path.join(self.tmpdir, filename)
+        logger.debug(f'Repairing audio file. New path: {path}')
+        clip.write_audiofile(path)
         try:
-            # Convert
-            audio = AudioFileClip(self.video)
-            audio.write_audiofile(audio_path)
-            return audio_path
-        except Exception as err:
-            logger.error(
-                f'Unable to create audio clip from video file. Path: {self.video}. Error: {err}')
+            os.remove(self.audio)
+            logger.debug(f'Removed file {self.audio}')
+        except:
+            logger.warning(f'Unable to remove file {self.audio}.')
+        self.audio = path
 
-    def convert_video_to_text(self, start=None, end=None, hot_word=None):
-        """
-        Gets the transcript of the audio at a certain timespan.
-        Cuts the video -> convert it to audio -> gets the transcript > remove audio.
-
-        Params:
-            start (float): Start time of the check.
-            end (float): End time of the check.
-            hot_word (str): Hot word to look for.
-
-        Returns:
-            str: The transcript of this audio at this timespan.
-        """
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            audio_filename = f'Temporary.wav'
-
-            audio_path = os.path.join(tmpdir, audio_filename)
-
-            try:
-                audio = AudioFileClip(self.video)
-
-                # Create subclip with the desired length and get transcript
-                logger.debug(f'Writing to audio file {audio_path}')
-                if(start is not None and end is not None):
-                    if(start < 0):
-                        start = 0
-                    if(end > audio.duration):
-                        end = audio.duration
-                    audio.subclip(start, end).write_audiofile(audio_path)
-                else:
-                    audio.write_audiofile(audio_path)
-
-                transcript = self.convert_audio_to_text(audio_path, hot_word=hot_word)
-                return transcript
-            except Exception as e:
-                logger.error(
-                    f'Error while converting video to text. Error: {e}')
-
-    def convert_audio_to_text(self, audio_path: str, start=None, end=None, hot_word=None):
+    def convert_audio_to_text(self, start=None, end=None, hot_word=None):
         """
         Converts audio file to text. Can be of specific timestamp or with hot word.
 
         Params:
-            audio_path (str): Path to audio file.
             start (float): OPTIONAL: start time.
             end (float): OPTIONAL: end time.
             hot_word (str): OPTIONAL: hot word to look for.
@@ -142,7 +99,7 @@ class Converter():
         """
 
         recognizer = sr.Recognizer()
-        audio_file = sr.AudioFile(audio_path)          
+        audio_file = sr.AudioFile(self.audio)          
 
         with audio_file as source:
             if(start is not None and end is not None):

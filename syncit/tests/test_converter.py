@@ -19,18 +19,6 @@ class TestConverter(unittest.TestCase):
         data = open(TestConstants.SAMPLE_VIDEO_PATH, 'rb')
         self.converter = Converter(FileStorage(data), 'mp4')
 
-    def test_convert_video_to_audio(self):
-        """
-        Tests convert_to_wav method.
-        Checks if the conversion is succesful by comparing the size of
-        the audio file with the size it supposed to be.
-        """
-
-        # Convert the entire file
-        audio_path = self.converter.convert_video_to_audio()
-        audio_size = os.path.getsize(audio_path)
-        self.assertEqual(audio_size, TestConstants.SAMPLE_AUDIO_SIZE)
-
     def test_convert_audio_to_text(self):
         """
         Test for the convert_audio_to_text method.
