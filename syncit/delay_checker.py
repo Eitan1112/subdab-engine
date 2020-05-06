@@ -1,19 +1,18 @@
-from syncit.constants import Constants
 import multiprocessing as mp
 import numpy as np
 import random
 from moviepy.editor import VideoFileClip
 from itertools import repeat
+from difflib import SequenceMatcher
 import logging
+from syncit.constants import Constants
 from logger_setup import setup_logging
 from syncit.helpers import clean_text
 from syncit.subtitle_parser import SubtitleParser
 from syncit.converter import Converter
-from difflib import SequenceMatcher
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
 
 class DelayChecker():
     """
@@ -27,7 +26,7 @@ class DelayChecker():
         hot_words (tuple): Hot words of this section.
     """
 
-    def __init__(self, audio_file, start: int, end: int, subtitles: str):
+    def __init__(self, audio_file, start: int, end: int, subtitles: str, audio_language: str, subtitles_language: str):
         """
         Class to check the delay.
 
@@ -39,10 +38,10 @@ class DelayChecker():
             extension (str): The extension.
         """
 
-        self.converter = Converter(audio_file)
+        self.converter = Converter(audio_file, audio_language)
         self.start = start
         self.end = end
-        self.sp = SubtitleParser(subtitles)
+        self.sp = SubtitleParser(subtitles, subtitles_language)
 
     def check_delay_in_timespan(self):
         """

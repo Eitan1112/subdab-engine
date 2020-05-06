@@ -1,4 +1,5 @@
 class Constants():
+    GOOGLE_APPLICATION_CREDENTIALS_PATH = r'‪C:\Users\Eitan\UzudurFQ'
     MIN_ACCURACY = 0.65
     SAMPLES_TO_CHECK = 20
     SAMPLES_TO_PASS = 0.2 # 0 to 1

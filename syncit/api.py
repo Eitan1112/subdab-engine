@@ -5,11 +5,16 @@ import os
 from syncit.delay_checker import DelayChecker
 from syncit.constants import Constants
 # from syncit.sync_checker import SyncChecker
+from dotenv import load_dotenv
 import logging
 from logger_setup import setup_logging
 
+load_dotenv()
+
 setup_logging()
 logger = logging.getLogger(__name__)
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = Constants.GOOGLE_APPLICATION_CREDENTIALS_PATH
 
 app = Flask(__name__)
 
@@ -75,12 +80,14 @@ def check_delay():
         start = int(request.form['start'])
         end = int(request.form['end'])
         subtitles = request.form['subtitles']
+        audio_language = request.form['audio_language']
+        subtitles_language = request.form['subtitles_language']
         audio_file = request.files['file']
     except:
         return Response({'error': 'Bad Request'}, 400)
 
     try:
-        dc = DelayChecker(audio_file, start, end, subtitles)
+        dc = DelayChecker(audio_file, start, end, subtitles, audio_language, subtitles_language)
         delay = dc.check_delay_in_timespan()
 
         if(delay is None):

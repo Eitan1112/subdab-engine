@@ -2,6 +2,7 @@ import re
 import random
 from syncit.constants import Constants
 from syncit.helpers import convert_subs_time, clean_text
+from google.cloud import translate_v2 as translate
 import logging
 from logger_setup import setup_logging
 
@@ -17,18 +18,23 @@ class SubtitleParser():
     Attributes:
         subtitles (str): Subtitles file content.
         re_subs (list): List of tuples containing the parsed subtitles.
+        language (str): Language of the subtitles.
+        translate_client (translate.Client): The translate client
     """
 
-    def __init__(self, subtitles: str):
+    def __init__(self, subtitles: str, language: str):
         """
         Constructor for the SubtitlesParser class.
 
         Params:
             subtitles (str): Subtitles string. 
+            language (str): The language of the subtitles.
         """
 
         self.subtitles = subtitles
         self.read_subtitles()
+        self.language = language
+        self.translate_client = translate.Client()
 
     def read_subtitles(self):
         """
@@ -62,13 +68,14 @@ class SubtitleParser():
 
         return (subtitles, start, end)
 
-    def get_valid_hot_words(self, start: float, end: float):
+    def get_valid_hot_words(self, start: float, end: float, target_language=None):
         """
         Loops through the subtitles and finds valid hot words in the specified timespan.
 
         Params:
             start (float): start time.
             end (float): end time.
+            target_language (str): The language to get the hot words in. If None, the original language.
 
         Returns:
             tuple: A tuple of tuples containing: (hot word, subtitles, start, end).
@@ -107,13 +114,20 @@ class SubtitleParser():
 
             # Make sure the word is only one time in the radius
             word_occurences_in_timespan = self.check_word_occurences_in_timespan(
-                hot_word, subtitles_start - Constants.DELAY_RADIUS, subtitles_start + Constants.DELAY_RADIUS)
-            
+                hot_word, subtitles_start - Constants.DELAY_RADIUS, subtitles_start + Constants.DELAY_RADIUS)            
             if(word_occurences_in_timespan > 1):
                 continue
 
-            valid_hot_words.append(
-                (hot_word, subtitles, subtitles_start, subtitles_end))
+            # If no translation is needed -> Append the word and continue
+            if(target_language is None):
+                valid_hot_words.append(
+                    (hot_word, subtitles, subtitles_start, subtitles_end))
+            else:
+                response = self.translate_client.translate(hot_word, target_language=target_language, source_language=self.language, format_='text')
+                translated_hot_word = response['translatedText']
+                
+                valid_hot_words.append(
+                    (translated_hot_word, subtitles, subtitles_start, subtitles_end))
 
         return tuple(valid_hot_words)
 

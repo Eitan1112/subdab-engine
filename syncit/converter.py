@@ -25,19 +25,22 @@ class Converter():
     Attributes:
         audio (str): Path to audio file.
         tmpdir (str): Persistent temporary folder (if created).
+            language (str): Language of the audio.
     """
 
-    def __init__(self, audio_file):
+    def __init__(self, audio_file, language: str):
         """
         Constructor of Converter.
 
         Params:
             audio_file (FileStorage): Object with the video file loaded.
+            language (str): Language of the audio.
         """
 
         self.tmpdir = tempfile.mkdtemp()
         self.audio = self.convert_filestorage_to_file(audio_file)
         self.repair_audio_file()
+        self.language = language
 
     def convert_filestorage_to_file(self, audio_file):
         """
