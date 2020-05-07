@@ -27,6 +27,12 @@ class Constants():
     VERIFY_DELAY_SAMPLES_TO_PASS = 6
     VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS = 4
 
+    AUDIO_LANGUAGES = [
+        { 'code': 'en', 'pocketsphinx_code': 'en-US'},
+        { 'code': 'it', 'pocketsphinx_code': 'it-IT'},
+        { 'code': 'fr', 'pocketsphinx_code': 'fr-FR'}
+    ]
+
     TRIM_SECTION_STEP = 0.9
     TRIM_SECTION_STEP_DIVIDER = 3
     TRIM_SECTION_FINAL_STEP = 0.1

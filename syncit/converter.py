@@ -25,7 +25,7 @@ class Converter():
     Attributes:
         audio (str): Path to audio file.
         tmpdir (str): Persistent temporary folder (if created).
-            language (str): Language of the audio.
+        language (str): Language of the audio.
     """
 
     def __init__(self, audio_file, language: str):
@@ -40,7 +40,8 @@ class Converter():
         self.tmpdir = tempfile.mkdtemp()
         self.audio = self.convert_filestorage_to_file(audio_file)
         self.repair_audio_file()
-        self.language = language
+        # Replace 2 char code language with 4 char code language (e.g.: en -> en-US)
+        self.language = list(filter(lambda lan: lan['code'] == language ,Constants.AUDIO_LANGUAGES))[0]['pocketsphinx_code']
 
     def convert_filestorage_to_file(self, audio_file):
         """
@@ -61,8 +62,9 @@ class Converter():
             try:
                 f.write(audio_file.read())
             except Exception as e:
-                logger.error(f'Unable to convert FileStorage to file. Error: {e}')
-        
+                logger.error(
+                    f'Unable to convert FileStorage to file. Error: {e}')
+
         logger.debug(f'Finished converting FileStorage to file.')
         return path
 
@@ -74,7 +76,7 @@ class Converter():
 
         Re sets the path.
         """
-        
+
         logger.debug('Repairing audio file')
         clip = AudioFileClip(self.audio)
         filename = f'{uuid.uuid4().hex[:10]}.{Constants.DESIRED_AUDIO_FILE_EXTENSION}'
@@ -88,36 +90,29 @@ class Converter():
             logger.warning(f'Unable to remove file {self.audio}.')
         self.audio = path
 
-    def convert_audio_to_text(self, start=None, end=None, hot_word=None):
+    def convert_audio_to_text(self, start: float, end: float, hot_word: str):
         """
         Converts audio file to text. Can be of specific timestamp or with hot word.
 
         Params:
-            start (float): OPTIONAL: start time.
-            end (float): OPTIONAL: end time.
-            hot_word (str): OPTIONAL: hot word to look for.
+            start (float): start time.
+            end (float): end time.
+            hot_word (str): hot word to look for.
 
         Returns:
             str: The required transcript.
         """
 
         recognizer = sr.Recognizer()
-        audio_file = sr.AudioFile(self.audio)          
+        audio_file = sr.AudioFile(self.audio)
 
         with audio_file as source:
-            if(start is not None and end is not None):
-                duration = end - start
-                audio = recognizer.record(
-                    source, offset=start, duration=duration)
-            else:
-                audio = recognizer.record(source)
+            duration = end - start
+            audio = recognizer.record(source, offset=start, duration=duration)
 
         try:
-            if(hot_word):
-                transcript = recognizer.recognize_sphinx(
-                    audio, 'en-US', [(hot_word, 1)])
-            else:
-                transcript = recognizer.recognize_sphinx(audio)
+            transcript = recognizer.recognize_sphinx(
+                audio, language=self.language, keyword_entries=[(hot_word, 1)])
             return transcript
 
         # Empty transcript
@@ -133,7 +128,6 @@ class Converter():
         Deletes the temporary folder, if created.
         """
 
-        
         if(self.tmpdir):
             try:
                 shutil.rmtree(self.tmpdir)
