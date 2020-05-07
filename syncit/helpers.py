@@ -36,6 +36,12 @@ def clean_text(original_text: str):
     text = text.replace('♪', '').replace('â™ª', '')
     text = re.sub(' +', ' ', text)  # Replace multiple whitespaces in one
     text = text.strip()
+    text = text.translate(str.maketrans('', '', string.digits)) # Remove digits
+    
+    
+    if(len(text) < 2):
+        return ''
+    
 
     return text
 

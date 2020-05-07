@@ -52,7 +52,7 @@ class DelayChecker():
         """
 
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
-        self.hot_words = self.sp.get_valid_hot_words(self.start, self.end)
+        self.hot_words = self.sp.get_valid_hot_words(self.start, self.end, self.converter.language)
         logger.debug(f"Hot words: {self.hot_words}")
         delay = None
 
@@ -151,6 +151,13 @@ class DelayChecker():
         unsimilars = 0
         hot_words = list(self.hot_words)
         random.shuffle(hot_words)
+        samples_to_check = Constants.VERIFY_DELAY_SAMPLES_TO_CHECK
+
+        # Check if the hot words are translated. If so -> Change the samples to pass amount.
+        if(self.converter.language == self.sp.language):
+            samples_to_pass = Constants.VERIFY_DELAY_SAMPLES_TO_PASS
+        else:
+            samples_to_pass = Constants.VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS
 
         for hot_word_args in hot_words:
             (hot_word, subtitles, subtitles_start, subtitles_end) = hot_word_args
@@ -170,10 +177,10 @@ class DelayChecker():
                     f"Hot word '{hot_word}' added to unsimilars in delay {delay}")
                 unsimilars += 1
 
-            if(similars >= Constants.VERIFY_DELAY_SAMPLES_TO_PASS):
+            if(similars >= samples_to_pass):
                 return True
 
-            if(unsimilars >= Constants.VERIFY_DELAY_SAMPLES_TO_CHECK - Constants.VERIFY_DELAY_SAMPLES_TO_PASS):
+            if(unsimilars >= samples_to_check - samples_to_pass):
                 return False
 
     def get_word_time(self, word: str, start: float, end: float, subtitles_start: float):
@@ -286,32 +293,6 @@ class DelayChecker():
 
             logger.debug(f"Word '{word}' found time! Time: {word_start}")
             return word_start
-
-    def check_single_transcript(self, subtitles: str, start: float, end: float):
-        """
-        Checks the similarity ratio between subtitles and the video during a certain timespan based on the video path.
-
-        Params:
-            subtitles (str): The subtitles of this timestamps.
-            start (float): Start time of the timestamps in the audio
-            end (float): End time of the timestamps in the audio
-
-        Returns:
-            Boolean: Whether the video and subtitles are synced or not.
-        """
-
-        transcript = self.converter.convert_audio_to_text(start, end)
-        clean_transcript = clean_text(transcript)
-
-        similarity_rate = SequenceMatcher(
-            None, clean_transcript, subtitles).ratio()
-
-        logger.debug(
-            f"""Subtitles: {subtitles} | Hot Word: {subtitles.split()[0]} | Clean Subtitles: {subtitles} | Transcript: {clean_transcript} | Clean Transcript: {clean_transcript} | Similarity: {similarity_rate}. Start: {start}. End: {end}""")
-
-        if(similarity_rate > Constants.MIN_ACCURACY):
-            return True
-        return False
 
     def word_in_timespan_occurrences(self, word: str, start: float, end: float):
         """

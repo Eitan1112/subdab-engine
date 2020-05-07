@@ -4,11 +4,16 @@ from syncit.constants import Constants
 from syncit.helpers import convert_subs_time, clean_text
 from google.cloud import translate_v2 as translate
 import logging
+import os
 from logger_setup import setup_logging
 
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+# First character is \u202a
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = Constants.GOOGLE_APPLICATION_CREDENTIALS_PATH[1::]
+translate_client = translate.Client()
 
 
 class SubtitleParser():
@@ -19,7 +24,6 @@ class SubtitleParser():
         subtitles (str): Subtitles file content.
         re_subs (list): List of tuples containing the parsed subtitles.
         language (str): Language of the subtitles.
-        translate_client (translate.Client): The translate client
     """
 
     def __init__(self, subtitles: str, language: str):
@@ -34,7 +38,6 @@ class SubtitleParser():
         self.subtitles = subtitles
         self.read_subtitles()
         self.language = language
-        self.translate_client = translate.Client()
 
     def read_subtitles(self):
         """
@@ -42,7 +45,7 @@ class SubtitleParser():
         """
 
         # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
-        
+
         pattern = r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)"
 
         re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
@@ -103,18 +106,18 @@ class SubtitleParser():
                 hot_word = subtitles.split()[0]
             except:
                 continue
-            
+
             # Don't check popular hot words, waste of time
             if(hot_word in Constants.COMMON_WORDS_UNSUITABLE_FOR_DETECTION):
                 continue
-                
+
             # Don't take numbers as hot words
-            if(hot_word.replace('.', '', 1).isdigit()): # The replace is if the number is a float
+            if(hot_word.replace('.', '', 1).isdigit()):  # The replace is if the number is a float
                 continue
 
             # Make sure the word is only one time in the radius
             word_occurences_in_timespan = self.check_word_occurences_in_timespan(
-                hot_word, subtitles_start - Constants.DELAY_RADIUS, subtitles_start + Constants.DELAY_RADIUS)            
+                hot_word, subtitles_start - Constants.DELAY_RADIUS, subtitles_start + Constants.DELAY_RADIUS)
             if(word_occurences_in_timespan > 1):
                 continue
 
@@ -123,9 +126,13 @@ class SubtitleParser():
                 valid_hot_words.append(
                     (hot_word, subtitles, subtitles_start, subtitles_end))
             else:
-                response = self.translate_client.translate(hot_word, target_language=target_language, source_language=self.language, format_='text')
-                translated_hot_word = response['translatedText']
-                
+                logger.debug(f"Translating hot word '{hot_word}'.")
+                response = translate_client.translate(
+                    hot_word, target_language=target_language, source_language=self.language)
+                translated_hot_word = clean_text(response['translatedText'])
+                logger.debug(
+                    f"Translation of '{hot_word}' is '{translated_hot_word}'")
+
                 valid_hot_words.append(
                     (translated_hot_word, subtitles, subtitles_start, subtitles_end))
 
