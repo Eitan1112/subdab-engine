@@ -41,6 +41,8 @@ class SubtitleParser():
         encoding = detect_encoding(subtitles_binary)['encoding']
         self.subtitles = subtitles_binary.decode(encoding)
         self.encoding = encoding
+        logger.debug(f'Subtitles Encoding: {encoding}')
+        logger.debug(f'Subtitles[:100]: {[self.subtitles[:1000]]}')
         self.read_subtitles()
         self.language = language
 
@@ -51,7 +53,7 @@ class SubtitleParser():
 
         # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
 
-        pattern = r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)"
+        pattern = r"(\d+)\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\n)*.+)"
 
         re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
 
@@ -92,6 +94,7 @@ class SubtitleParser():
         valid_hot_words = []
 
         subs_length = len(self.re_subs)
+        logger.debug(f'Subs Length: {subs_length}')
 
         for sub in range(1, subs_length):
 

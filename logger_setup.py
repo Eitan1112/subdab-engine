@@ -13,6 +13,7 @@ def setup_logging(
     """
 
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger('chardet').setLevel(logging.WARNING)
     path = default_path
     value = os.getenv(env_key, None)
     if(value):
