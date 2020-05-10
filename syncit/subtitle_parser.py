@@ -12,7 +12,7 @@ from logger_setup import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# First character is \u202a
+# [1::] Because first character is \u202a
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = Constants.GOOGLE_APPLICATION_CREDENTIALS_PATH[1::]
 translate_client = translate.Client()
 
@@ -54,8 +54,13 @@ class SubtitleParser():
         # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
 
         pattern = r"(\d+)\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\n)*.+)"
-
         re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
+        if(len(re_subs) < 1):
+            pattern = r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)"
+            re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
+        
+        if(len(re_subs) < 1):
+            raise Exception(f're_subs length is {len(re_subs)}. Maybe the regex pattern is falty?')
 
         self.re_subs = re_subs
 
@@ -130,7 +135,7 @@ class SubtitleParser():
                 continue
 
             # If no translation is needed -> Append the word and continue
-            if(target_language is None):
+            if(target_language == self.language):
                 valid_hot_words.append(
                     (hot_word, subtitles, subtitles_start, subtitles_end))
             else:
