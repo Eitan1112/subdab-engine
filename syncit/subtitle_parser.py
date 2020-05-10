@@ -5,6 +5,7 @@ from syncit.helpers import convert_subs_time, clean_text
 from google.cloud import translate_v2 as translate
 import logging
 import os
+from chardet import detect as detect_encoding
 from logger_setup import setup_logging
 
 
@@ -24,18 +25,22 @@ class SubtitleParser():
         subtitles (str): Subtitles file content.
         re_subs (list): List of tuples containing the parsed subtitles.
         language (str): Language of the subtitles.
+        encoding (str): The encoding of the subtitles.
     """
 
-    def __init__(self, subtitles: str, language: str):
+    def __init__(self, subtitles_file, language: str):
         """
         Constructor for the SubtitlesParser class.
 
         Params:
-            subtitles (str): Subtitles string. 
+            subtitles_file (FileStorage): File with the subtitles loaded.
             language (str): The language of the subtitles.
         """
 
-        self.subtitles = subtitles
+        subtitles_binary = subtitles_file.read()
+        encoding = detect_encoding(subtitles_binary)['encoding']
+        self.subtitles = subtitles_binary.decode(encoding)
+        self.encoding = encoding
         self.read_subtitles()
         self.language = language
 
@@ -126,7 +131,7 @@ class SubtitleParser():
                 valid_hot_words.append(
                     (hot_word, subtitles, subtitles_start, subtitles_end))
             else:
-                logger.debug(f"Translating hot word '{hot_word}'.")
+                logger.debug(f"Translating hot word '{hot_word}' From {self.language} to {target_language}.")
                 response = translate_client.translate(
                     hot_word, target_language=target_language, source_language=self.language)
                 translated_hot_word = clean_text(response['translatedText'])

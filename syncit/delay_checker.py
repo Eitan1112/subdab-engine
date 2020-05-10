@@ -26,7 +26,7 @@ class DelayChecker():
         hot_words (tuple): Hot words of this section.
     """
 
-    def __init__(self, audio_file, start: int, end: int, subtitles: str, audio_language: str, subtitles_language: str):
+    def __init__(self, audio_file, start: int, end: int, subtitles_file: str, audio_language: str, subtitles_language: str):
         """
         Class to check the delay.
 
@@ -34,14 +34,16 @@ class DelayChecker():
             audio_file (FileStorage): Object with the video file loaded.
             start (int): Start time of the video.
             end (int): End time of the video.
-            subtitles (str): The subtitles string.
+            subtitles_file (FileStorafe): The subtitles file.
             extension (str): The extension.
         """
 
         self.converter = Converter(audio_file, audio_language)
         self.start = start
         self.end = end
-        self.sp = SubtitleParser(subtitles, subtitles_language)
+        self.sp = SubtitleParser(subtitles_file, subtitles_language)
+        self.audio_language = audio_language
+        self.subtitles_language = subtitles_language
 
     def check_delay_in_timespan(self):
         """
@@ -52,7 +54,7 @@ class DelayChecker():
         """
 
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
-        self.hot_words = self.sp.get_valid_hot_words(self.start, self.end, self.converter.language)
+        self.hot_words = self.sp.get_valid_hot_words(self.start, self.end, self.audio_language)
         logger.debug(f"Hot words: {self.hot_words}")
         delay = None
 
@@ -154,7 +156,7 @@ class DelayChecker():
         samples_to_check = Constants.VERIFY_DELAY_SAMPLES_TO_CHECK
 
         # Check if the hot words are translated. If so -> Change the samples to pass amount.
-        if(self.converter.language == self.sp.language):
+        if(self.audio_language == self.subtitles_language):
             samples_to_pass = Constants.VERIFY_DELAY_SAMPLES_TO_PASS
         else:
             samples_to_pass = Constants.VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS

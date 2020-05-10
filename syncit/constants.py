@@ -25,7 +25,7 @@ class Constants():
 
     VERIFY_DELAY_SAMPLES_TO_CHECK = 13
     VERIFY_DELAY_SAMPLES_TO_PASS = 6
-    VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS = 4
+    VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS = 5
 
     AUDIO_LANGUAGES = [
         { 'code': 'en', 'pocketsphinx_code': 'en-US'},

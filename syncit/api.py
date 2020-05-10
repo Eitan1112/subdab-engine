@@ -56,10 +56,10 @@ def check_delay():
     Route to check the delay based on a timestamps.
 
     Request Params:
-        file: FileStorage object with the video file.
+        audio_file: FileStorage object with the video file.
+        subtitles_file: FileStorage object with the complete subtitles.
         start: The start time of the video.
         end: The end time of the video.
-        subtitles: The subtitles of this timestamps.
         video_language: The lanaguage code of the video (and audio).
         subtitles_language: The language code of the subtitles.
 
@@ -75,23 +75,24 @@ def check_delay():
     try:
         start = int(request.form['start'])
         end = int(request.form['end'])
-        subtitles = request.form['subtitles']
         audio_language = request.form['video_language']
         subtitles_language = request.form['subtitles_language']
         logger.debug(f'Languages: Subtitles - {subtitles_language}. Audio: {audio_language}.')
-        audio_file = request.files['file']
+        subtitles_file = request.files['subtitles']
+        audio_file = request.files['audio']
     except:
         return Response({'error': 'Bad Request'}, 400)
 
     try:
-        dc = DelayChecker(audio_file, start, end, subtitles, audio_language, subtitles_language)
+        dc = DelayChecker(audio_file, start, end, subtitles_file, audio_language, subtitles_language)
         delay = dc.check_delay_in_timespan()
 
         if(delay is None):
             return Response(json.dumps({}), 200)
 
         else:
-            return Response(json.dumps({'delay': delay}), 200)
+            encoding = dc.sp.encoding
+            return Response(json.dumps({'delay': delay, 'encoding': encoding}), 200)
     except Exception as e:
         logger.error(f'Error in check_delay. Error: {e}')
         return Response(json.dumps({'error': 'Internal Server Error.'}), 500)

@@ -59,11 +59,7 @@ class Converter():
         path = os.path.join(self.tmpdir, filename)
         logger.debug(f'Converting FileStorage to file. path: {path}')
         with open(path, 'wb') as f:
-            try:
-                f.write(audio_file.read())
-            except Exception as e:
-                logger.error(
-                    f'Unable to convert FileStorage to file. Error: {e}')
+            f.write(audio_file.read())
 
         logger.debug(f'Finished converting FileStorage to file.')
         return path
@@ -77,7 +73,7 @@ class Converter():
         Re sets the path.
         """
 
-        logger.debug('Repairing audio file')
+        logger.debug(f'Repairing audio file: {self.audio}')
         clip = AudioFileClip(self.audio)
         filename = f'{uuid.uuid4().hex[:10]}.{Constants.DESIRED_AUDIO_FILE_EXTENSION}'
         path = os.path.join(self.tmpdir, filename)
