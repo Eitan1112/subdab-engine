@@ -25,7 +25,9 @@ class TestChecker(unittest.TestCase):
             '<i><span font="helavica">Adios</span></i>',
             'What?\nThis is WHAT?',
             ' Some   text in   multiple     whitespaces ',
-            '<i>*Quacks*</i>'        
+            '<i>*Quacks*</i>',
+            'BOB: this is ME ',
+            'Hello 5 this is 4'
         ) 
 
         target_texts = (
@@ -36,7 +38,9 @@ class TestChecker(unittest.TestCase):
             'adios',
             'what this is what',
             'some text in multiple whitespaces',
-            ''
+            '',
+            'this is me',
+            'hello this is'
         )
 
         for i,text in enumerate(texts_to_clean):

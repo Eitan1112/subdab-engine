@@ -30,12 +30,12 @@ def clean_text(original_text: str):
     for tag in tags:
         text = text.replace(tag, '')
 
+    text = re.sub(r'^\S+:\s?', '', text) # Remove narrator text (e.g.: 'BOB: I am going to dinner' -> 'I am going to dinner')
     text = text.lower()
     text = text.translate(str.maketrans(
         '', '', string.punctuation))  # Remove punctuations
     text = text.replace('♪', '').replace('â™ª', '')
     text = text.translate(str.maketrans('', '', string.digits)) # Remove digits
-    text = re.sub(r'^\S+:\s?', '', text) # Remove narrator text (e.g.: 'BOB: I am going to dinner' -> 'I am going to dinner')
 
     text = re.sub(' +', ' ', text)  # Replace multiple whitespaces in one
     text = text.strip()
