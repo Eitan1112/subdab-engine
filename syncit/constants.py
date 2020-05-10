@@ -1,3 +1,5 @@
+import os
+
 class Constants():
     
     GOOGLE_APPLICATION_CREDENTIALS_PATH = r'‪C:\Users\Eitan\UzudurFQ' 
@@ -48,6 +50,9 @@ class Constants():
     'for', 'on', 'are', 'with', 'as', 'i', 'his', 'they', 'be', 'at', 'one', 'have', 'this', 'from', 'or', 'had', 'by', 'not', 
     'word', 'but', 'what', 'some', 'we', 'can', 'out', 'were', 'all', 'there', 'when', 'up', 'use', 'your', 'how', 'said', 
     'an', 'each', 'she', 'oh', 'who']
+
+    
+    SAMPLES_FOLDER = os.path.join('syncit', 'tests', 'samples')
 
 
 class TestConstants(Constants):

@@ -2,14 +2,13 @@ import unittest
 import os
 import tempfile
 from werkzeug.datastructures import FileStorage
+from syncit.constants import Constants
 from syncit.subtitle_parser import SubtitleParser
 from syncit.constants import TestConstants
 
-DIRNAME = os.path.dirname(os.path.abspath(__name__))
 
 # Setup Constant
-SAMPLE_SUBTITLES_PATH = os.path.join(
-    DIRNAME, 'syncit', 'tests', 'samples', 'subtitles.srt')
+SAMPLE_SUBTITLES_PATH = os.path.join(Constants.SAMPLES_FOLDER, 'subtitles.srt')
 SAMPLE_SUBTITLES_LANGUAGE = 'en'
 
 # test_read_subtitles Constants

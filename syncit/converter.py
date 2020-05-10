@@ -48,7 +48,7 @@ class Converter():
         Converts FileStorage object to a file. Stores it in temporary location and returns it's path.
 
         Params:
-            video_file (FileStorage): Object with the video file loaded.
+            audio_file (FileStorage): Object with the video file loaded.
             extension (str): The file extension.
 
         Returns:
