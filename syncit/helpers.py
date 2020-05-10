@@ -34,14 +34,14 @@ def clean_text(original_text: str):
     text = text.translate(str.maketrans(
         '', '', string.punctuation))  # Remove punctuations
     text = text.replace('♪', '').replace('â™ª', '')
+    text = text.translate(str.maketrans('', '', string.digits)) # Remove digits
+    text = re.sub(r'^\S+:\s?', '', text) # Remove narrator text (e.g.: 'BOB: I am going to dinner' -> 'I am going to dinner')
+
     text = re.sub(' +', ' ', text)  # Replace multiple whitespaces in one
     text = text.strip()
-    text = text.translate(str.maketrans('', '', string.digits)) # Remove digits
     
-    
-    if(len(text) < 2):
+    if(len(text) < 2 and text != 'i'):
         return ''
-    
 
     return text
 
