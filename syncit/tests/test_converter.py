@@ -14,9 +14,9 @@ LANGUAGE = 'en'
 LANGUAGE_CODE = 'en-US'
 
 # test_convert_audio_to_text Constants
-WORD = 'love'
-START = 47
-END = 48
+WORD = 'elsa'
+START = 57
+END = 60
 
 
 class TestConverter(unittest.TestCase):
