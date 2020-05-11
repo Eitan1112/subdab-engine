@@ -4,8 +4,6 @@ import tempfile
 from werkzeug.datastructures import FileStorage
 from syncit.constants import Constants
 from syncit.subtitle_parser import SubtitleParser
-from syncit.constants import TestConstants
-
 
 # Setup Constant
 SAMPLE_SUBTITLES_PATH = os.path.join(Constants.SAMPLES_FOLDER, 'subtitles.srt')
@@ -85,5 +83,5 @@ class TestSubtitleParser(unittest.TestCase):
         occurences = self.sp.check_word_occurences_in_timespan(
             OCCURENCES_WORD, OCCURENCES_START, OCCURENCES_END)
 
-        self.assertEqual(occurences, OCCURENCES, 'Check check_word_occurences_in_timespan.')
-        
+        self.assertEqual(occurences, OCCURENCES,
+                         'Check check_word_occurences_in_timespan.')
