@@ -62,7 +62,7 @@ class SubtitleParser():
 
         for pattern in patterns:
             re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
-            if(len(re_subs) <= 1):
+            if(len(re_subs) > 1):
                 self.re_subs = re_subs
                 return
 
