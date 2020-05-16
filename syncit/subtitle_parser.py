@@ -69,7 +69,6 @@ class SubtitleParser():
         raise Exception(
             f're_subs length is {len(re_subs)}. Maybe the regex pattern is falty?')
 
-
     def get_subtitles(self, index: int):
         """
         Gets cleaned subtitles and the timespan of a specific index in seconds.
@@ -99,7 +98,7 @@ class SubtitleParser():
             target_language (str): The language to get the hot words in. If None, the original language.
 
         Returns:
-            tuple: A tuple of tuples containing: (hot word, subtitles, start, end).
+            tuple: A tuple of dicts containing: {hot_word, subtitles, start, end}.
         """
 
         valid_hot_words = []
@@ -142,8 +141,12 @@ class SubtitleParser():
 
             # If no translation is needed -> Append the word and continue.
             if(target_language == self.language):
-                valid_hot_words.append(
-                    (hot_word, subtitles, subtitles_start, subtitles_end))
+                valid_hot_words.append({
+                    'hot_word': hot_word,
+                    'subtitles': subtitles,
+                    'start': subtitles_start,
+                    'end': subtitles_end
+                })
             # If translation is needed -> Translate the word and append the word.
             else:
                 response = translate_client.translate(
@@ -161,45 +164,37 @@ class SubtitleParser():
                 logger.debug(
                     f"Translated hot word '{hot_word}' From {self.language} to {target_language}. Result: {translated_hot_words}. Hot word: {translated_hot_word}")
 
-                valid_hot_words.append(
-                    (translated_hot_word, subtitles, subtitles_start, subtitles_end))
+                valid_hot_words.append({
+                    'hot_word': translated_hot_word,
+                    'subtitles': translated_hot_words,
+                    'start': subtitles_start,
+                    'end': subtitles_end
+                })
 
+        valid_hot_words = self.filter_hot_words(valid_hot_words)
         return tuple(valid_hot_words)
 
-    def check_word_occurences_in_timespan(self, word: str, start: float, end: float):
+    def filter_hot_words(self, hot_words: list):
         """
-        Checks the number of occurences of a word in a timespan.
+        Filters the translated hot words, removes the falty ones.
 
         Params:
-            word (str): The word to look for.
-            start (float): The start time.
-            end (float): End time.
+            hot_words (list): List of dictionaries {hot_word, subtitles, start, end}
 
         Returns:
-            int: Occurences of the word in the timespan.
+            list: List of dictionaries, filter.
         """
 
-        subs_length = len(self.re_subs)
-        occurences = 0
+        to_remove = []
+        for hot_word_item in hot_words:
+            hot_word = hot_word_item['hot_word']
+            is_hot_word_falty = any(
+                [hot_word in i['subtitles'].split() for i in hot_words if i != hot_word_item])
+            if(is_hot_word_falty):
+                to_remove.append(hot_word_item)
 
-        for sub in range(1, subs_length):
+        # Can't remove them in the loop because then it will cause problems
+        for item in to_remove:
+            hot_words.remove(item)
 
-            # Get the subtitles by index
-            (subtitles, subtitles_start, subtitles_end) = self.get_subtitles(sub)
-
-            # Skip to the start time
-            if(subtitles_start < start):
-                continue
-
-            # Reached the end
-            if(subtitles_end > end):
-                break
-
-            # Cleaned subtitles are None
-            if(subtitles is None):
-                continue
-
-            # Add the amount of times the word is said)
-            occurences += subtitles.split().count(word)
-
-        return occurences
+        return hot_words
