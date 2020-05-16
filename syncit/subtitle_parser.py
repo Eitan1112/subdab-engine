@@ -133,12 +133,6 @@ class SubtitleParser():
             if(hot_word.replace('.', '', 1).isdigit()):  # The replace is if the number is a float
                 continue
 
-            # Make sure the word is only one time in the radius
-            word_occurences_in_timespan = self.check_word_occurences_in_timespan(
-                hot_word, subtitles_start - Constants.DELAY_RADIUS, subtitles_start + Constants.DELAY_RADIUS)
-            if(word_occurences_in_timespan > 1):
-                continue
-
             # If no translation is needed -> Append the word and continue.
             if(target_language == self.language):
                 valid_hot_words.append({
