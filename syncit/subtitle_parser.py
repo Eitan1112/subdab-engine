@@ -56,7 +56,8 @@ class SubtitleParser():
         patterns = [
             r"(\d+)\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\n)*.+)",
             r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)",
-            r"(\d+)\r(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\r)*.+)" # Reports pattern
+            # Reports pattern
+            r"(\d+)\r(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\r)*.+)"
         ]
 
         for pattern in patterns:
@@ -64,9 +65,9 @@ class SubtitleParser():
             if(len(re_subs) > 1):
                 self.re_subs = re_subs
                 return
-        
-        raise Exception(f're_subs length is {len(re_subs)}. Maybe the regex pattern is falty?')
 
+        raise Exception(
+            f're_subs length is {len(re_subs)}. Maybe the regex pattern is falty?')
 
     def get_subtitles(self, index: int):
         """
@@ -125,8 +126,8 @@ class SubtitleParser():
                 continue
 
             # Don't check popular hot words, waste of time
-            if(hot_word in Constants.COMMON_WORDS_UNSUITABLE_FOR_DETECTION):
-                continue
+            # if(hot_word in Constants.COMMON_WORDS_UNSUITABLE_FOR_DETECTION):
+            #     continue
 
             # Don't take numbers as hot words
             if(hot_word.replace('.', '', 1).isdigit()):  # The replace is if the number is a float
@@ -138,17 +139,26 @@ class SubtitleParser():
             if(word_occurences_in_timespan > 1):
                 continue
 
-            # If no translation is needed -> Append the word and continue
+            # If no translation is needed -> Append the word and continue.
             if(target_language == self.language):
                 valid_hot_words.append(
                     (hot_word, subtitles, subtitles_start, subtitles_end))
+            # If translation is needed -> Translate the word and append the word.
             else:
-                logger.debug(f"Translating hot word '{hot_word}' From {self.language} to {target_language}.")
                 response = translate_client.translate(
                     hot_word, target_language=target_language, source_language=self.language)
-                translated_hot_word = clean_text(response['translatedText'])
+                translated_hot_words = clean_text(response['translatedText'])
+
+                # Make sure the cleaned translated word is not None
+                if(translated_hot_words is None):
+                    continue
+
+                # Grab first word of translation
+                translated_hot_word = translated_hot_words.split()[0]
+                if(len(translated_hot_word) < 2):
+                    continue
                 logger.debug(
-                    f"Translation of '{hot_word}' is '{translated_hot_word}'")
+                    f"Translated hot word '{hot_word}' From {self.language} to {target_language}. Result: {translated_hot_words}. Hot word: {translated_hot_word}")
 
                 valid_hot_words.append(
                     (translated_hot_word, subtitles, subtitles_start, subtitles_end))
@@ -184,7 +194,11 @@ class SubtitleParser():
             if(subtitles_end > end):
                 break
 
-            # Add the amount of times the word is said
+            # Cleaned subtitles are None
+            if(subtitles is None):
+                continue
+
+            # Add the amount of times the word is said)
             occurences += subtitles.split().count(word)
 
         return occurences

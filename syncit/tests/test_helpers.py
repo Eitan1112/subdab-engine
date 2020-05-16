@@ -31,14 +31,14 @@ class TestChecker(unittest.TestCase):
         ) 
 
         target_texts = (
-            '',
+            None,
             'some text',
             'hello hello',
-            '',
+            None,
             'adios',
             'what this is what',
             'some text in multiple whitespaces',
-            '',
+            None,
             'this is me',
             'hello this is'
         )

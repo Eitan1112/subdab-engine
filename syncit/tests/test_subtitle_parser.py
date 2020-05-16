@@ -22,6 +22,7 @@ START = 0
 END = 75
 WORDS = (('bedtime', 'bedtime soon', 67.4, 68.37),
          ('uhoh', 'uhoh the princess is trapped', 68.373, 70.239),
+         ('in', 'in the snow goblins evil spell', 70.242, 71.808),
          ('quick', 'quick elsa make a prince a fancy one', 71.811, 74.611))
 LANGUAGE = 'en'
 

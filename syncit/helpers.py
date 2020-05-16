@@ -39,9 +39,8 @@ def clean_text(original_text: str):
 
     text = re.sub(' +', ' ', text)  # Replace multiple whitespaces in one
     text = text.strip()
-    
-    if(len(text) < 2 and text != 'i'):
-        return ''
+    if(len(text) <= 1):
+        return None
 
     return text
 
