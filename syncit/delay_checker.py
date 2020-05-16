@@ -80,13 +80,13 @@ class DelayChecker():
             self.converter.clean()
             return
 
-    def parse_single_hot_word(self, args: tuple):
+    def parse_single_hot_word(self, hot_word_item: tuple):
         """
         Gets a word and a timestamp, and tries to find the delay based on that.
         Tries to find the word time, and if found verifies that the delay is actually correct.
 
         Params:
-            args (tuple) containing:
+            hot_word_item (dict) containing:
                 hot_word (str): hot word to check.
                 subtitles (str): subtitles to verify.
                 start (int): start time in seconds of the subtitles.
@@ -96,7 +96,10 @@ class DelayChecker():
             int: The delay. (None fif couldn't find)
         """
 
-        (hot_word, subtitles, start, end) = args
+        hot_word = hot_word_item['hot_word']
+        subtitles = hot_word_item['subtitles']
+        start = hot_word_item['start']
+        end = hot_word_item['end']
 
         subtitles_start = start % Constants.DELAY_CHECKER_SECTIONS_TIME
         # The extended radius to check for the hot word
