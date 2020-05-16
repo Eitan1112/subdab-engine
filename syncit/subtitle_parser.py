@@ -165,7 +165,9 @@ class SubtitleParser():
                     'end': subtitles_end
                 })
 
+        logger.debug(f'Hot words before filtering: {valid_hot_words}')
         valid_hot_words = self.filter_hot_words(valid_hot_words)
+        logger.debug(f'Hot words after filtering: {valid_hot_words}')
         return tuple(valid_hot_words)
 
     def filter_hot_words(self, hot_words: list):

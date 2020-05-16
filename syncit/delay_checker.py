@@ -164,8 +164,11 @@ class DelayChecker():
         else:
             samples_to_pass = Constants.VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS
 
-        for hot_word_args in hot_words:
-            (hot_word, subtitles, subtitles_start, subtitles_end) = hot_word_args
+        for hot_word_item in hot_words:
+            hot_word = hot_word_item['hot_word']
+            subtitles = hot_word_item['subtitles']
+            subtitles_start = hot_word_item['start']
+            subtitles_end = hot_word_item['end']
 
             transcript_start = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + delay
             transcript_end = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + delay + Constants.ONE_WORD_AUDIO_TIME
