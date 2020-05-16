@@ -23,7 +23,7 @@ def clean_text(original_text: str):
 
     text = original_text
 
-    text = text.replace('\r\n', ' ').replace('\n', ' ')
+    text = text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ') # Replace linebreaks with space
 
     # Remove HTML tags, text in curly, regular or square brackets and text in *
     tags = re.findall(r'((?:<|\[|\(|\*|\{).+?(?:>|\)|}|]|\*))', text)
