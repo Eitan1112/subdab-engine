@@ -53,12 +53,22 @@ class SubtitleParser():
 
         # Group 1: index, Group 2: Start Time, Group 3: End Time, Group 4: Text
 
-        pattern = r"(\d+)(?:\n|\r\n|\r)(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r?\n((?:.+(?:\r|\n|\r\n))*.+)"
-        re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
-        if(len(re_subs) <= 1):
-            raise Exception(
-                f're_subs length is {len(re_subs)}. Maybe the regex pattern is falty?')
-        self.re_subs = re_subs
+        patterns = [
+            r"(\d+)\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\n)*.+)",
+            r"(\d+)\r\n(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\r\n((?:.+\r\n)*.+)",
+            # Reports pattern
+            r"(\d+)\r(\d\d:\d\d:\d\d,\d\d\d) --> (\d\d:\d\d:\d\d,\d\d\d)\n((?:.+\r)*.+)"
+        ]
+
+        for pattern in patterns:
+            re_subs = re.findall(pattern, self.subtitles, re.M | re.I)
+            if(len(re_subs) <= 1):
+                self.re_subs = re_subs
+                return
+
+        raise Exception(
+            f're_subs length is {len(re_subs)}. Maybe the regex pattern is falty?')
+
 
     def get_subtitles(self, index: int):
         """
