@@ -57,10 +57,12 @@ class DelayChecker():
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
         self.hot_words = self.sp.get_valid_hot_words(
             self.start, self.end, self.audio_language)
-        self.filter_and_sort_hot_wordss()
+        self.filter_and_sort_hot_words()
+        logger.debug(f"Final hot words: {self.hot_words}")
 
         # Don't check if there aren't enough hot words
-        if(len(self.hot_words) < Constants.SAMPLES_TO_CHECK):
+        if(len(self.hot_words) < Constants.VERIFY_DELAY_SAMPLES_TO_CHECK):
+            logger.debug(f"Not enough hot words. Hot words amount: {len(self.hot_words)}")
             return
 
         logger.debug(
@@ -89,7 +91,7 @@ class DelayChecker():
             self.converter.clean()
             return
 
-    def filter_and_sort_hot_wordss(self):
+    def filter_and_sort_hot_words(self):
         """
         Filters hot words which are not in the radius and sorts by occurences.
         """
@@ -99,9 +101,7 @@ class DelayChecker():
 
         for hot_word_item in self.hot_words:
             hot_word = hot_word_item['hot_word']
-            subtitles = hot_word_item['subtitles']
-            subtitles_start = hot_word_item['start']
-            subtitles_end = hot_word_item['end']
+            subtitles_start = hot_word_item['start'] % Constants.DELAY_CHECKER_SECTIONS_TIME
 
             # The extended radius to check for the hot word
             transcript_start = subtitles_start - Constants.DELAY_RADIUS
@@ -127,10 +127,10 @@ class DelayChecker():
                 self.hot_words[self.hot_words.index(
                     hot_word_item)]['occurences'] = occurences
 
+        # Remove items (can't remove during the previous loop because it is iterating over it)
         for item in items_to_remove:
             self.hot_words.remove(item)
 
-        logger.debug(f'Pre sorting {self.hot_words}')
         # Sort by occurences
         self.hot_words.sort(key=lambda hot_word: hot_word['occurences'])
 
