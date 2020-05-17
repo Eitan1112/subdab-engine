@@ -168,7 +168,7 @@ class SubtitleParser():
         logger.debug(f'Hot words before filtering: {valid_hot_words}')
         valid_hot_words = self.filter_hot_words(valid_hot_words)
         logger.debug(f'Hot words after filtering: {valid_hot_words}')
-        return tuple(valid_hot_words)
+        return valid_hot_words
 
     def filter_hot_words(self, hot_words: list):
         """
@@ -184,9 +184,16 @@ class SubtitleParser():
         to_remove = []
         for hot_word_item in hot_words:
             hot_word = hot_word_item['hot_word']
+
+            # True if the hot word is in the subtitles of it's range. (E.g. hot word 'hello' which is said at 00:42, when the subtitles at 00:52-00:56 is 'that is how you say hello')
             is_hot_word_falty = any(
-                [hot_word in i['subtitles'].split() for i in hot_words if i != hot_word_item])
+                [hot_word in i['subtitles'].split() for i in hot_words if i != hot_word_item
+                 and abs(i['start'] - hot_word_item['start']) < Constants.DELAY_RADIUS
+                 and abs(i['end'] - hot_word_item['end']) < Constants.DELAY_RADIUS
+                 ])
             if(is_hot_word_falty):
+                logger.debug(
+                    f"Removing hot word '{hot_word_item['hot_word']}' because it is more then once in radius")
                 to_remove.append(hot_word_item)
 
         # Can't remove them in the loop because then it will cause problems

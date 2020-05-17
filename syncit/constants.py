@@ -13,6 +13,7 @@ class Constants():
     INITIAL_DELAY_CHECK_STEP = 2 # Seconds
     MAXIMUM_WORD_LENGTH = 1 # Seconds
     DELAY_CHECK_DIVIDER = 4
+    MAX_OCCURENCES_OF_WORD_IN_RADIUS = 45
 
     MAX_OCCURENCES_TO_CHECK = 3
 
@@ -22,8 +23,7 @@ class Constants():
 
     WORD_TIME_SECTIONS_DIVIDER = 8
 
-    DELAY_CHECKER_SECTIONS_TIME = 200 # In seconds, have to be synced with frontend
-    CHECKED_DELAY_ARRAY_SIZE = 200
+    DELAY_CHECKER_SECTIONS_TIME = 300 # In seconds, have to be synced with frontend
 
     VERIFY_DELAY_SAMPLES_TO_CHECK = 13
     VERIFY_DELAY_SAMPLES_TO_PASS = 7

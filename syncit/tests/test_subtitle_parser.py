@@ -18,27 +18,28 @@ INDEX = 1885
 INDEX_SUBTITLES = 'and then a bunch of important things happen that i forgot'
 
 # test_get_valid_hot_words Constants
-START = 0
+START = 66
 END = 75
-WORDS = ({'hot_word': 'bedtime', 'subtitles': 'bedtime soon', 'start': 67.4, 'end': 68.37},
+WORDS = [{'hot_word': 'bedtime', 'subtitles': 'bedtime soon', 'start': 67.4, 'end': 68.37},
          {'hot_word': 'uhoh', 'subtitles': 'uhoh the princess is trapped',
              'start': 68.373, 'end': 70.239},
          {'hot_word': 'in', 'subtitles': 'in the snow goblins evil spell',
              'start': 70.242, 'end': 71.808},
-         {'hot_word': 'quick', 'subtitles': 'quick elsa make a prince a fancy one', 'start': 71.811, 'end': 74.611})
+         {'hot_word': 'quick', 'subtitles': 'quick elsa make a prince a fancy one', 'start': 71.811, 'end': 74.611}]
 LANGUAGE = 'en'
 
 # test_filter_hot_words Constants
 HOT_WORDS = [
-    {'hot_word': 'hello', 'subtitles': 'hello this is me something', 'start': 0, 'end': 10},
-    {'hot_word': 'take', 'subtitles': 'take it', 'start': 10, 'end': 20},
-    {'hot_word': 'something', 'subtitles': 'something like that', 'start': 20, 'end': 30},
-    {'hot_word': 'please', 'subtitles': 'please dont take me', 'start': 40, 'end': 30},
+    {'hot_word': 'hello', 'subtitles': 'hello this is me something', 'start': 0, 'end': 11},
+    {'hot_word': 'take', 'subtitles': 'take it', 'start': 11, 'end': 13},
+    {'hot_word': 'something', 'subtitles': 'something like that', 'start': 14, 'end': 15},
+    {'hot_word': 'please', 'subtitles': 'please dont take me', 'start': 70, 'end': 80},
 ]
 
 DESIRED_FILTERED_HOT_WORDS = [
-    {'hot_word': 'hello', 'subtitles': 'hello this is me something', 'start': 0, 'end': 10},
-    {'hot_word': 'please', 'subtitles': 'please dont take me', 'start': 40, 'end': 30},
+    {'hot_word': 'hello', 'subtitles': 'hello this is me something', 'start': 0, 'end': 11},
+    {'hot_word': 'take', 'subtitles': 'take it', 'start': 11, 'end': 13},
+    {'hot_word': 'please', 'subtitles': 'please dont take me', 'start': 70, 'end': 80},
 ]
 
 
@@ -83,7 +84,6 @@ class TestSubtitleParser(unittest.TestCase):
         """
 
         hot_words = self.sp.get_valid_hot_words(START, END, LANGUAGE)
-        print('\n\n\n\n', hot_words, '\n\n\n\n')
         self.assertEqual(hot_words, WORDS, 'Check get_valid_hot_words.')
 
     def test_filter_hot_words(self):
