@@ -51,18 +51,23 @@ class DelayChecker():
         Tries to find the delay in the timespan of the class.
 
         Returns:
-            int: Subtitles delay in seconds. 
+            int: Subtitles delay in seconds.
         """
 
         # Get valid hot words in timespan (reducing from the end and appending to the start the delay radius to avoid exceeding beyond the file length)
         self.hot_words = self.sp.get_valid_hot_words(
             self.start, self.end, self.audio_language)
-        self.filter_and_sort_hot_words()
+
+        self.filter_hot_words()
+
+        # Sort by occurences
+        self.hot_words.sort(key=lambda hot_word: hot_word['occurences'])
         logger.debug(f"Final hot words: {self.hot_words}")
 
         # Don't check if there aren't enough hot words
         if(len(self.hot_words) < Constants.VERIFY_DELAY_SAMPLES_TO_CHECK):
-            logger.debug(f"Not enough hot words. Hot words amount: {len(self.hot_words)}")
+            logger.debug(
+                f"Not enough hot words. Hot words amount: {len(self.hot_words)}")
             return
 
         logger.debug(
@@ -91,48 +96,61 @@ class DelayChecker():
             self.converter.clean()
             return
 
-    def filter_and_sort_hot_words(self):
+    def filter_hot_words(self):
         """
-        Filters hot words which are not in the radius and sorts by occurences.
+        Filter the hot words using multiprocessing.
         """
 
-        logger.debug(f'Looping through hot words {self.hot_words}')
-        items_to_remove = []
+        remove_indexes = []
+        with mp.Pool() as pool:
+            hot_words_with_occurences = pool.map(
+                self.get_hot_word_occurences, self.hot_words)
 
-        for hot_word_item in self.hot_words:
-            hot_word = hot_word_item['hot_word']
-            subtitles_start = hot_word_item['start'] % Constants.DELAY_CHECKER_SECTIONS_TIME
+            for i, item in enumerate(hot_words_with_occurences):
+                logger.debug(f"Replacing {self.hot_words[i]} with {item}")
+                self.hot_words[i] = item
+                if(item['occurences'] == 0 or item['occurences'] >= Constants.MAX_OCCURENCES_OF_WORD_IN_RADIUS):
+                    remove_indexes.append(item)
 
-            # The extended radius to check for the hot word
-            transcript_start = subtitles_start - Constants.DELAY_RADIUS
-            transcript_end = subtitles_start + Constants.DELAY_RADIUS
-
-            # Avoid negative start time, too high start time or too high end time
-            if (transcript_start < 0):
-                transcript_start = 0
-            if(transcript_start > self.end):
-                logger.debug(f'Removing {hot_word} for transcript start')
-                return
-            if(transcript_end > self.end):
-                transcript_end = self.end
-
-            occurences = self.word_in_timespan_occurrences(
-                hot_word, transcript_start, transcript_end)
-            if(occurences == 0 or occurences > Constants.MAX_OCCURENCES_OF_WORD_IN_RADIUS):
-                logger.debug(f"Removed word '{hot_word}' it is {occurences} times in time")
-                items_to_remove.append(hot_word_item)
-
-            else:
-                # Add the occurences
-                self.hot_words[self.hot_words.index(
-                    hot_word_item)]['occurences'] = occurences
-
-        # Remove items (can't remove during the previous loop because it is iterating over it)
-        for item in items_to_remove:
+            pool.close()
+            pool.join()
+            pool.terminate()
+        
+        for item in remove_indexes:
+            logger.debug(f"Removing {item}")
             self.hot_words.remove(item)
 
-        # Sort by occurences
-        self.hot_words.sort(key=lambda hot_word: hot_word['occurences'])
+
+    def get_hot_word_occurences(self, hot_word_item: dict):
+        """
+        Adds the occurences of a hot word to it's dictionary in self.hot_words.
+
+        Params:
+            hot_word_item (dict): The hot_word_item.
+        """
+
+        hot_word = hot_word_item['hot_word']
+        subtitles_start = hot_word_item['start'] % Constants.DELAY_CHECKER_SECTIONS_TIME
+
+        # The extended radius to check for the hot word
+        transcript_start = subtitles_start - Constants.DELAY_RADIUS
+        transcript_end = subtitles_start + Constants.DELAY_RADIUS
+
+        # Avoid negative start time, too high start time or too high end time
+        if (transcript_start < 0):
+            transcript_start = 0
+        if(transcript_start > self.end):
+            logger.debug(f'Removing {hot_word} for transcript start')
+            return
+        if(transcript_end > self.end):
+            transcript_end = self.end
+
+        occurences = self.word_in_timespan_occurrences(
+            hot_word, transcript_start, transcript_end)
+
+        new_hot_word_item = hot_word_item
+        new_hot_word_item['occurences'] = occurences
+        return new_hot_word_item
 
     def parse_single_hot_word(self, hot_word_item: tuple):
         """
@@ -167,18 +185,6 @@ class DelayChecker():
             return
         if(transcript_end > self.end):
             transcript_end = self.end
-
-        # Gets number of times the hot word is in the audio transcript of the radius time
-        # hot_word_in_transcript = self.word_in_timespan_occurrences(
-        #     hot_word, transcript_start, transcript_end)
-
-        # # If the hot word is one time in the audio transcript, check when is it said. Else, return None
-        # if(hot_word_in_transcript == 0):
-        #     logger.debug(f"Word '{hot_word}' is not in timespan.")
-        #     return
-
-        # logger.debug(
-        #     f"Word '{hot_word}' is in timespan. Checking the time...")
 
         # Gets the word start time
         new_subtitles_start = self.get_word_time(
