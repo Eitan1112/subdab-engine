@@ -156,7 +156,7 @@ class SubtitleParser():
                 if(len(translated_hot_word) < 2):
                     continue
                 logger.debug(
-                    f"Translated hot word '{hot_word}' From {self.language} to {target_language}. Result: {translated_hot_words}. Hot word: {translated_hot_word}")
+                    f"Translataion. From '{self.language}' to '{target_language}'. From '{subtitles}' to '{translated_hot_words}'. Hot word: '{translated_hot_word}'")
 
                 valid_hot_words.append({
                     'hot_word': translated_hot_word,

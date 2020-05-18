@@ -60,9 +60,10 @@ class DelayChecker():
 
         self.filter_hot_words()
 
-        # Sort by occurences
+        # Sort by occurences and keep only those without many occurences
         self.hot_words.sort(key=lambda hot_word: hot_word['occurences'])
         logger.debug(f"Final hot words: {self.hot_words}")
+        # self.hot_words = self.hot_words[:Constants.SAMPLES_TO_CHECK]
 
         # Don't check if there aren't enough hot words
         if(len(self.hot_words) < Constants.VERIFY_DELAY_SAMPLES_TO_CHECK):
@@ -169,9 +170,7 @@ class DelayChecker():
         """
 
         hot_word = hot_word_item['hot_word']
-        subtitles = hot_word_item['subtitles']
         start = hot_word_item['start']
-        end = hot_word_item['end']
 
         subtitles_start = start % Constants.DELAY_CHECKER_SECTIONS_TIME
         # The extended radius to check for the hot word
