@@ -23,7 +23,8 @@ class Constants():
 
     WORD_TIME_SECTIONS_DIVIDER = 8
 
-    DELAY_CHECKER_SECTIONS_TIME = 300 # In seconds, have to be synced with frontend
+    DELAY_CHECKER_SECTIONS_TIME = 300 # In seconds, have to be synced with frontend.
+    MAXIMUM_DELAYS_TO_VERIFY = 15 # After verifing X delays, send a response without delay to recieve new timestamp.
 
     VERIFY_DELAY_SAMPLES_TO_CHECK = 13
     VERIFY_DELAY_SAMPLES_TO_PASS = 7

@@ -1,9 +1,11 @@
 import multiprocessing as mp
+from multiprocessing import shared_memory
 import numpy as np
 import random
 from moviepy.editor import VideoFileClip
 from itertools import repeat
 from difflib import SequenceMatcher
+import uuid
 import logging
 from syncit.constants import Constants
 from logger_setup import setup_logging
@@ -25,6 +27,8 @@ class DelayChecker():
         end (float): End time of the video,compared to the larger video.
         sp (SubtitleParser): SubtitleParser object with the subtitles loaded.
         hot_words (tuple): Hot words of this section.
+        memory_name (str): Shared memory name.
+        self.falty_delays (ShareableList): Mutable list of size 15 shared between processes containing the delays already verified falty. 
     """
 
     def __init__(self, audio_file, start: int, end: int, subtitles_file: str, audio_language: str, subtitles_language: str):
@@ -45,6 +49,8 @@ class DelayChecker():
         self.sp = SubtitleParser(subtitles_file, subtitles_language)
         self.audio_language = audio_language
         self.subtitles_language = subtitles_language
+        self.memory_name = f'{uuid.uuid4().hex[:10]}' # Unique name
+        self.falty_delays = shared_memory.ShareableList(sequence=([None] * Constants.MAXIMUM_DELAYS_TO_VERIFY), name=self.memory_name)
 
     def check_delay_in_timespan(self):
         """
@@ -211,9 +217,11 @@ class DelayChecker():
             bool: Whether the delay is correct or not.
         """
 
+        
         similars = 0
         unsimilars = 0
         hot_words = list(self.hot_words)
+        falty_delays = shared_memory.ShareableList(name=self.memory_name)
         random.shuffle(hot_words)
         samples_to_check = Constants.VERIFY_DELAY_SAMPLES_TO_CHECK
 
@@ -250,6 +258,10 @@ class DelayChecker():
                 return True
 
             if(unsimilars >= samples_to_check - samples_to_pass):
+                # Add delay to falty occurences. Replace the first index of None in the list with the delay.
+                if(None in falty_delays):
+                    falty_delays[falty_delays.index(None)] = float(delay)
+                    logger.debug(f"Added {delay} to falty delays. Falty delays: {falty_delays}")
                 return False
 
     def get_word_time(self, word: str, start: float, end: float, subtitles_start: float):
@@ -267,6 +279,12 @@ class DelayChecker():
             float: Start time in seconds the word is said.
         """
 
+        # End if more then X delays were falty
+        falty_delays = shared_memory.ShareableList(name=self.memory_name)
+        if(None not in falty_delays):
+            logger.debug(f"Falty delays were exceeded, ending get_word_time loop for word '{word}'.")
+            return
+
         # Calculate step
         step = (end - start) / Constants.DELAY_CHECK_DIVIDER
 
@@ -278,7 +296,7 @@ class DelayChecker():
 
             # If the trimming didn't return a valid time
             if(trimmed_word_time is None):
-                return None
+                return
 
             # Calculate the delay
             delay = trimmed_word_time - subtitles_start
@@ -292,7 +310,7 @@ class DelayChecker():
             else:
                 logger.debug(
                     f"Word '{word}' with delay {delay} not accuracte enough")
-                return None
+                return
 
         # Loop through the sections
         for current_start in np.arange(start, end, step):
