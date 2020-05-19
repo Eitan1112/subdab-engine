@@ -4,4 +4,4 @@ SpeechRecognition
 filetype
 flask
 flask_cors
-psutils
+google-cloud-translate==2.0.1
