@@ -6,7 +6,6 @@ import shutil
 import os
 import base64
 import uuid
-import psutil
 import speech_recognition as sr
 from syncit.constants import Constants
 import logging
