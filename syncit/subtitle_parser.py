@@ -12,8 +12,6 @@ from logger_setup import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# [1::] Because first character is \u202a
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = Constants.GOOGLE_APPLICATION_CREDENTIALS_PATH[1::]
 translate_client = translate.Client()
 
 
@@ -125,10 +123,6 @@ class SubtitleParser():
             except:
                 continue
 
-            # Don't check popular hot words, waste of time
-            # if(hot_word in Constants.COMMON_WORDS_UNSUITABLE_FOR_DETECTION):
-            #     continue
-
             # Don't take numbers as hot words
             if(hot_word.replace('.', '', 1).isdigit()):  # The replace is if the number is a float
                 continue
@@ -165,7 +159,8 @@ class SubtitleParser():
                     'end': subtitles_end
                 })
 
-        logger.debug(f'Hot words before filtering and sorting: {valid_hot_words}')
+        logger.debug(
+            f'Hot words before filtering and sorting: {valid_hot_words}')
         valid_hot_words = self.filter_hot_words(valid_hot_words)
         return valid_hot_words
 

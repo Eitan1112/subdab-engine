@@ -70,7 +70,7 @@ def check_delay():
         If delay not found:
             Empty dict.
     """
-
+    
     logger.info('Checking delay.')
     try:
         start = int(request.form['start'])
