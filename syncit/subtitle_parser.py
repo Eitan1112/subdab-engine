@@ -6,6 +6,7 @@ from google.cloud import translate_v2 as translate
 import logging
 import os
 from chardet import detect as detect_encoding
+from langdetect import detect as detect_language
 from logger_setup import setup_logging
 
 
@@ -42,7 +43,20 @@ class SubtitleParser():
         logger.debug(f'Subtitles Encoding: {encoding}')
         logger.debug(f'Subtitles[:100]: {[self.subtitles[:1000]]}')
         self.read_subtitles()
-        self.language = language
+
+        # Detect subtitles language
+        if(language == 'ad'): # ad = Auto Detect
+            detected_language = detect_language(self.subtitles)
+            logger.debug(f"Subtitles language detected as {detected_language}")
+
+            # True if the detected language in google's supported languages
+            language_items = any(map(lambda lang: lang['language'] == detected_language, translate_client.get_languages()))
+            if(language_items is False):
+                raise Exception(f'Detected language {detected_language} is not supported.')
+            self.language = detected_language
+            
+        else:
+            self.language = language
 
     def read_subtitles(self):
         """
