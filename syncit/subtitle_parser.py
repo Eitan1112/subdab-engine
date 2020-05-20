@@ -3,6 +3,7 @@ import random
 from syncit.constants import Constants
 from syncit.helpers import convert_subs_time, clean_text
 from google.cloud import translate_v2 as translate
+from google.oauth2 import service_account
 import logging
 import os
 from chardet import detect as detect_encoding
@@ -13,7 +14,9 @@ from logger_setup import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-translate_client = translate.Client()
+credentials_path = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+credentials = service_account.Credentials.from_service_account_file(credentials_path)
+translate_client = translate.Client(credentials=credentials)
 
 
 class SubtitleParser():
