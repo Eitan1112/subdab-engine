@@ -14,9 +14,7 @@ from logger_setup import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-credentials_path = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
-credentials = service_account.Credentials.from_service_account_file(credentials_path)
-translate_client = translate.Client(credentials=credentials)
+translate_client = translate.Client()
 
 
 class SubtitleParser():

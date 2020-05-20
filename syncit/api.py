@@ -1,12 +1,13 @@
+from dotenv import load_dotenv
+load_dotenv()
+import os
+import logging
+from logger_setup import setup_logging
 from flask import Flask, request, Response
 from flask_cors import CORS, cross_origin
 import json
-import os
 from syncit.delay_checker import DelayChecker
 from syncit.constants import Constants
-# from syncit.sync_checker import SyncChecker
-import logging
-from logger_setup import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
