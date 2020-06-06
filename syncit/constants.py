@@ -33,7 +33,16 @@ class Constants():
     AUDIO_LANGUAGES = [
         {'code': 'en', 'pocketsphinx_code': 'en-US'},
         {'code': 'it', 'pocketsphinx_code': 'it-IT'},
-        {'code': 'fr', 'pocketsphinx_code': 'fr-FR'}
+        {'code': 'fr', 'pocketsphinx_code': 'fr-FR'},
+        { 'code': 'es', 'pocketsphinx_code': 'es-ES'},
+        { 'code': 'mx', 'pocketsphinx_code': 'es-MX'},
+        { 'code': 'de', 'pocketsphinx_code': 'de-DE'},
+        { 'code': 'el', 'pocketsphinx_code': 'el-GR'},
+        { 'code': 'hi', 'pocketsphinx_code': 'hi-HI'},
+        { 'code': 'kz', 'pocketsphinx_code': 'kz-KZ'},
+        { 'code': 'nl', 'pocketsphinx_code': 'nl-NL'},
+        { 'code': 'ru', 'pocketsphinx_code': 'ru-RU'},
+        { 'code': 'zh', 'pocketsphinx_code': 'zh-CN'},
     ]
 
     TRIM_SECTION_STEP = 0.9
