@@ -5,6 +5,7 @@ import tempfile
 import shutil
 import os
 import base64
+import requests
 import uuid
 import speech_recognition as sr
 from syncit.constants import Constants
@@ -106,13 +107,22 @@ class Converter():
             audio = recognizer.record(source, offset=start, duration=duration)
 
         try:
-            transcript = recognizer.recognize_sphinx(
-                audio, language=self.language, keyword_entries=[(hot_word, 1)])
-            return transcript
+            data = {
+                'frame_data_base64': base64.b64encode(audio.frame_data),
+                'sample_rate': audio.sample_rate,
+                'sample_width': audio.sample_width,
+                'language': self.language,
+                'hot_word': hot_word
+            }
+            url = os.getenv('CONVERT_SPEECH_TO_TEXT_SERVER_URL')
+            if(url is None):
+                raise Exception(f'Convert speech to text server url (lambda) is None.')
 
-        # Empty transcript
-        except sr.UnknownValueError:
-            return ''
+            res = requests.post(url, data=data)
+            if(res.status_code == 200):
+                return res.text
+            else:
+                raise Exception(f'Recieved status code {res.status_code} from speech to text API. Response: {res.text}.')
 
         except Exception as e:
             logger.error(f'Unknown Error while recognizing. Error: {e}')
