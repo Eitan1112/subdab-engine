@@ -1,15 +1,8 @@
-import multiprocessing as mp
-from multiprocessing import shared_memory
-import numpy as np
-import random
-from moviepy.editor import VideoFileClip
-from itertools import repeat
-from difflib import SequenceMatcher
+import threading
 import uuid
 import logging
 from syncit.constants import Constants
 from logger_setup import setup_logging
-from syncit.helpers import clean_text
 from syncit.subtitle_parser import SubtitleParser
 from syncit.converter import Converter
 
@@ -60,19 +53,24 @@ class DelayChecker():
             float: The delay.
         """
 
+        grouped_sections = self.get_grouped_sections()
+        self.get_occurences_for_grouped_sections(grouped_sections)
+
 
     def get_grouped_sections(self):
         """
         Divides the audio file to sections and gets the hot words to check for.
 
         Returns:
-            list of dicts:
-                ids (list): list of ids of words in the section.
+            list of dicts: List of sections with the ids to check in each timespan.
+                ids (list of dicts): list of ids of words in the section.
+                    id (str): The id.
+                    occurences (NoneType): The occurences of the id in the timestamp.
                 start (float): Start time.
                 end (float): End time.
         """
         
-        sections_items = []
+        grouped_sections = []
         for section_start in range(self.start, self.end, Constants.DIVIDED_SECTIONS_TIME):
             section_end = section_start + Constants.DIVIDED_SECTIONS_TIME + Constants.ONE_WORD_AUDIO_TIME 
             if(section_end > self.end): section_end = self.end # Handle edge case where the end time is after the audio end time
@@ -84,11 +82,56 @@ class DelayChecker():
                 hot_word_end = hot_word_item['end'] + Constants.DELAY_RADIUS
                 is_word_in_section = hot_word_start < section_end and hot_word_end > section_start
                 if(is_word_in_section):
-                    section_item['ids'].append(hot_word_item['ids'])
+                    section_item['ids'].append({'id': hot_word_item['ids'], 'occurences': None})
 
-            sections_items.append(section_item)
+            grouped_sections.append(section_item)
 
         # Remove Empty Sections
-        sections_items = [section_item for section_item in sections_items if len(section_item['ids']) > 0]
-        logger.debug(f'Sections_items {sections_items}')
-        return sections_items
+        grouped_sections = [section_item for section_item in grouped_sections if len(section_item['ids']) > 0]
+        logger.debug(f'Sections_items {grouped_sections}')
+        return grouped_sections
+
+    def get_occurences_for_grouped_sections(self, grouped_sections: list):
+        """
+        Gets the occurences for the grouped sections.
+
+        Params: 
+            grouped_sections (list of dicts): The section with their hot words.
+                ids (list of dicts): list of ids of words in the section.
+                    id (str): The id.
+                    occurences (NoneType): The occurences of the id in the timestamp.
+                start (float): Start time.
+                end (float): End time.
+        
+        Returns:
+            list of dicts: The same list from the params with occurences inside.
+                ids (list of dicts): list of ids of words in the section.
+                    id (str): The id.
+                    occurences (int): The occurences of the id in the timestamp.
+                start (float): Start time.
+                end (float): End time.
+        """
+
+        # for section_item in grouped_sections:
+
+    def get_hot_words_occurences(self, start: float, end: float, ids: list):
+        """
+        Gets the occurences of the hot words inside the timespan.
+
+        Params:
+            start (float): Start time.
+            end (float): End time.
+            ids (list of str): List of ids.
+        
+        Returns:
+            list of dicts:
+                id (str): Id.
+                occurences (int): occurences of id in timestamp.
+        """
+
+        hot_words = [hot_word_item['hot_word'] for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
+        logger.debug(f'Checking occurences. Start: {start}. End: {end}. Words: {hot_words}. Ids: {ids}.')
+        transcript = self.converter.convert_audio_to_text(start, end, hot_words)
+        occurences = [{'id': id, 'occurences': transcript.split().count(id)} for id in ids]
+        logger.debug(f'Occurences: {occurences}')
+        return occurences

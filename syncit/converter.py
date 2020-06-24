@@ -5,6 +5,7 @@ import tempfile
 import shutil
 import os
 import base64
+import json
 import requests
 import uuid
 import speech_recognition as sr
@@ -86,14 +87,14 @@ class Converter():
             logger.warning(f'Unable to remove file {self.audio}.')
         self.audio = path
 
-    def convert_audio_to_text(self, start: float, end: float, hot_word: str):
+    def convert_audio_to_text(self, start: float, end: float, hot_words: str):
         """
         Converts audio file to text. Can be of specific timestamp or with hot word.
 
         Params:
             start (float): start time.
             end (float): end time.
-            hot_word (str): hot word to look for.
+            hot_words (list): hot words to look for.
 
         Returns:
             str: The required transcript.
@@ -112,7 +113,7 @@ class Converter():
                 'sample_rate': audio.sample_rate,
                 'sample_width': audio.sample_width,
                 'language': self.language,
-                'hot_word': hot_word
+                'hot_words': json.dumps(hot_words)
             }
             url = os.getenv('CONVERT_SPEECH_TO_TEXT_SERVER_URL')
             if(url is None):
