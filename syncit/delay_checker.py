@@ -112,7 +112,19 @@ class DelayChecker():
                 end (float): End time.
         """
 
-        # for section_item in grouped_sections:
+        threads = []
+        for section_item in grouped_sections:
+            start = section_item['start']
+            end = section_item['end']
+            ids = [item['id'] for item in section_item['ids']]
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(start, end, ids))
+            thread.start()
+            threads.append(thread)
+        
+        for thread in threads:
+            
+
+
 
     def get_hot_words_occurences(self, start: float, end: float, ids: list):
         """
