@@ -9,6 +9,7 @@ import os
 from chardet import detect as detect_encoding
 from langdetect import detect as detect_language
 from logger_setup import setup_logging
+import uuid
 
 
 setup_logging()
@@ -111,7 +112,7 @@ class SubtitleParser():
             target_language (str): The language to get the hot words in. If None, the original language.
 
         Returns:
-            tuple: A tuple of dicts containing: {hot_word, subtitles, start, end}.
+            tuple: A tuple of dicts containing: {id, hot_word, subtitles, start, end}.
         """
 
         valid_hot_words = []
@@ -145,6 +146,7 @@ class SubtitleParser():
             # If no translation is needed -> Append the word and continue.
             if(target_language == self.language):
                 valid_hot_words.append({
+                    'id': uuid.uuid4().hex[:10],
                     'hot_word': hot_word,
                     'subtitles': subtitles,
                     'start': subtitles_start,
