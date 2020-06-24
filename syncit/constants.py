@@ -67,3 +67,4 @@ class Constants():
 
     ##### New Delay Checker #####
     DIVIDED_SECTIONS_TIME = 4
+    RETRIES_AFTER_API_ERROR = 4

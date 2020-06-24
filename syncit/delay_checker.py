@@ -145,7 +145,7 @@ class DelayChecker():
                 id (str): Id.
                 occurences (int): occurences of id in timestamp.
         """
-
+    
         hot_words = [hot_word_item['hot_word'] for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
         logger.debug(f'Checking occurences. Start: {start}. End: {end}. Words: {hot_words}. Ids: {ids}.')
         transcript = self.converter.convert_audio_to_text(start, end, hot_words)

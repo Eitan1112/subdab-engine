@@ -27,6 +27,7 @@ class Converter():
         audio (str): Path to audio file.
         tmpdir (str): Persistent temporary folder (if created).
         language (str): Language of the audio.
+        session (requests.session): Session to persist when talking with API.
     """
 
     def __init__(self, audio_file, language: str):
@@ -43,6 +44,7 @@ class Converter():
         self.repair_audio_file()
         # Replace 2 char code language with 4 char code language (e.g.: en -> en-US)
         self.language = list(filter(lambda lan: lan['code'] == language ,Constants.AUDIO_LANGUAGES))[0]['pocketsphinx_code']
+        self.session = requests.Session()
 
     def convert_filestorage_to_file(self, audio_file):
         """
@@ -118,12 +120,13 @@ class Converter():
             url = os.getenv('CONVERT_SPEECH_TO_TEXT_SERVER_URL')
             if(url is None):
                 raise Exception(f'Convert speech to text server url (lambda) is None.')
+            
+            for i in range(Constants.RETRIES_AFTER_API_ERROR):
+                res = self.session.post(url, data=data)
+                if(res.status_code == 200):
+                    return res.text
+            raise Exception(f'Recieved status code {res.status_code} from speech to text API. Response: {res.text}.')
 
-            res = requests.post(url, data=data)
-            if(res.status_code == 200):
-                return res.text
-            else:
-                raise Exception(f'Recieved status code {res.status_code} from speech to text API. Response: {res.text}.')
 
         except Exception as e:
             logger.error(f'Unknown Error while recognizing. Error: {e}')
