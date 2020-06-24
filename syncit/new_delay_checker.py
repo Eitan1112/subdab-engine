@@ -66,9 +66,22 @@ class DelayChecker():
 
         Returns:
             list of dicts:
-                ids (str): ids of word.
+                ids (list): list of ids of words in the section.
                 start (float): Start time.
                 end (float): End time.
         """
-
         
+        sections_items = []
+        for section_start in range(self.start, self.end, Constants.DIVIDED_SECTIONS_TIME):
+            section_end = section_start + Constants.DIVIDED_SECTIONS_TIME + Constants.ONE_WORD_AUDIO_TIME 
+            if(section_end > self.end): section_end = self.end
+            section_item = {'ids': [], 'start': section_start, 'end': section_end}
+
+            for hot_word_item in self.hot_words:
+                is_word_in_section = hot_word_item['start'] < section_end and hot_word_item['end'] > section_start
+                if(is_word_in_section):
+                    section_item['ids'].append(hot_word_item['id'])
+
+            sections_items.append(section_item)
+
+        return sections_items

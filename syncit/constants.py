@@ -62,3 +62,8 @@ class Constants():
                                              'an', 'each', 'she', 'oh', 'who']
 
     SAMPLES_FOLDER = os.path.join('syncit', 'tests', 'samples')
+
+
+
+    ##### New Delay Checker #####
+    DIVIDED_SECTIONS_TIME = 4
