@@ -30,12 +30,15 @@ class TestDelayChecker(unittest.TestCase):
         sample_subtitles_file.close()
         sample_audio_file.close()
     
-    def test_get_grouped_sections(self):
-        """
-        Test the get_grouped_sections method.
-        """
+    # def test_get_grouped_sections(self):
+    #     """
+    #     Test the get_grouped_sections method.
+    #     """
+
+    #     grouped_sections = self.dc.get_grouped_sections()
+
+
+    def test_get_occurences_for_grouped_sections(self):
 
         grouped_sections = self.dc.get_grouped_sections()
-
-
-    
+        self.dc.get_occurences_for_grouped_sections(grouped_sections)

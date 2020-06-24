@@ -82,7 +82,7 @@ class DelayChecker():
                 hot_word_end = hot_word_item['end'] + Constants.DELAY_RADIUS
                 is_word_in_section = hot_word_start < section_end and hot_word_end > section_start
                 if(is_word_in_section):
-                    section_item['ids'].append({'id': hot_word_item['ids'], 'occurences': None})
+                    section_item['ids'].append({'id': hot_word_item['id'], 'occurences': None})
 
             grouped_sections.append(section_item)
 
@@ -113,20 +113,24 @@ class DelayChecker():
         """
 
         threads = []
+        results = []
         for section_item in grouped_sections:
             start = section_item['start']
             end = section_item['end']
             ids = [item['id'] for item in section_item['ids']]
-            thread = threading.Thread(target=self.get_hot_words_occurences, args=(start, end, ids))
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(start, end, ids, results))
             thread.start()
             threads.append(thread)
+
+        # Wait for threads to finish
+        [thread.join() for thread in threads]
         
-        for thread in threads:
+        logger.debug(f'Final Results: {results}')
             
 
 
 
-    def get_hot_words_occurences(self, start: float, end: float, ids: list):
+    def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list):
         """
         Gets the occurences of the hot words inside the timespan.
 
@@ -134,8 +138,9 @@ class DelayChecker():
             start (float): Start time.
             end (float): End time.
             ids (list of str): List of ids.
+            results (list): List to update the results (useful for threading)
         
-        Returns:
+        Appending to results:
             list of dicts:
                 id (str): Id.
                 occurences (int): occurences of id in timestamp.
@@ -144,6 +149,7 @@ class DelayChecker():
         hot_words = [hot_word_item['hot_word'] for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
         logger.debug(f'Checking occurences. Start: {start}. End: {end}. Words: {hot_words}. Ids: {ids}.')
         transcript = self.converter.convert_audio_to_text(start, end, hot_words)
-        occurences = [{'id': id, 'occurences': transcript.split().count(id)} for id in ids]
-        logger.debug(f'Occurences: {occurences}')
-        return occurences
+        logger.debug(f'Transcript: {transcript}')
+        occurences = [{'id': id, 'occurences': transcript.split().count(hot_words[index])} for index,id in enumerate(ids)]
+        logger.debug(f'Start: {start}. End: {end}. Occurences: {occurences}')
+        results.append(occurences)
