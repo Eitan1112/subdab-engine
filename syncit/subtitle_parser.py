@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import re
 import random
 from syncit.constants import Constants
@@ -11,7 +12,7 @@ from langdetect import detect as detect_language
 from logger_setup import setup_logging
 import uuid
 
-
+load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -203,8 +204,6 @@ class SubtitleParser():
                  and abs(i['end'] - hot_word_item['end']) < Constants.DELAY_RADIUS
                  ])
             if(is_hot_word_falty):
-                logger.debug(
-                    f"Removing hot word '{hot_word_item['hot_word']}' because it is more then once in radius")
                 to_remove.append(hot_word_item)
 
         # Can't remove them in the loop because then it will cause problems
