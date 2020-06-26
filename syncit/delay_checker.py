@@ -1,5 +1,6 @@
-import time
+import ctypes
 import threading
+import time
 import uuid
 import logging
 import numpy as np
@@ -203,10 +204,12 @@ class DelayChecker():
         logger.debug(
             f'Start trimming. Start: {start}. End: {end}. Ids: {ids}.')
         results = []
+        stop = False
         threads = []
         for current_start in np.arange(start, end, Constants.TRIM_SECTION_STEP):
+            logger.debug(f'Starting thread. Start: {current_start}.')
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(
-                current_start, end, ids, results))
+                current_start, end, ids, results, lambda: stop))
             thread.start()
             threads.append(thread)
 
@@ -216,7 +219,6 @@ class DelayChecker():
                 results, key=lambda result: result['start'])
             for idx, single_timestamp_results in enumerate(sorted_results[:-1]):
                 for current_result in single_timestamp_results['ids']:
-                    logger.debug(f'Current result: {current_result}')
                     if(current_result['occurences'] != 1):
                         continue
                     for next_result in results[idx + 1]['ids']:
@@ -224,11 +226,11 @@ class DelayChecker():
                             final_ids_times.append(
                                 {'id': current_result['id'], 'start': single_timestamp_results['start']})
                             if(len(final_ids_times) == len(ids)):
-                                logger.debug(
-                                    f'Final ids times returned: {final_ids_times}.')
+                                stop = True
+                                logger.debug(f'Final ids times returned: {final_ids_times}.')
                                 return final_ids_times
 
-            all_threads_finished = all([thread.isAlive()
+            all_threads_finished = all([thread.is_alive()
                                         for thread in threads])
             if(all_threads_finished):
                 break
@@ -236,7 +238,7 @@ class DelayChecker():
         logger.error(
             f'Unable to find trimmed time. Results: {results}. Final ids times: {final_ids_times}')
 
-    def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list):
+    def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list, stop=lambda: False):
         """
         Gets the occurences of the hot words inside the timespan.
 
@@ -245,6 +247,7 @@ class DelayChecker():
             end (float): End time.
             ids (list of str): List of ids.
             results (list): List to update the results (useful for threading)
+            stop (function): Should the converter stop before sending the request. If not passed, will not stop.
 
         Appending to results:
             list of dicts:
@@ -261,14 +264,12 @@ class DelayChecker():
                      for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
 
         if(len(ids_checked) == len(ids)):
-            logger.debug(
-                f'Already checked item. Start: {start}. End: {end}. ids: {ids}. ids_checked: {ids_checked}. Checked: {self.checked}')
             timespan_result = [{'id': id, 'occurences': 0}
                                for index, id in enumerate(ids)]
 
         else:
             transcript = self.converter.convert_audio_to_text(
-                start, end, hot_words)
+                start, end, hot_words, stop)
             timespan_result = [{'id': id, 'occurences': transcript.split().count(
                 hot_words[index])} for index, id in enumerate(ids)]
             self.checked += [{'start': start, 'end': end, 'id': item['id'],

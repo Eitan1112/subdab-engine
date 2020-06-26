@@ -89,7 +89,7 @@ class Converter():
             logger.warning(f'Unable to remove file {self.audio}.')
         self.audio = path
 
-    def convert_audio_to_text(self, start: float, end: float, hot_words: str):
+    def convert_audio_to_text(self, start: float, end: float, hot_words: str, stop):
         """
         Converts audio file to text. Can be of specific timestamp or with hot word.
 
@@ -97,6 +97,7 @@ class Converter():
             start (float): start time.
             end (float): end time.
             hot_words (list): hot words to look for.
+            stop (function): A flag, should the function stop before (checked before sending a request).
 
         Returns:
             str: The required transcript.
@@ -122,8 +123,11 @@ class Converter():
                 raise Exception(f'Convert speech to text server url (lambda) is None.')
             
             for _ in range(Constants.RETRIES_AFTER_API_ERROR):
+                if(stop() is True):
+                    return ''
                 res = self.session.post(url, data=data)
                 if(res.status_code == 200):
+                    logger.debug(f'Result: {res.text}')
                     return res.text
             raise Exception(f'Recieved status code {res.status_code} from speech to text API. Response: {res.text}.')
 
