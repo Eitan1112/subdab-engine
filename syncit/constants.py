@@ -45,7 +45,7 @@ class Constants():
         { 'code': 'zh', 'pocketsphinx_code': 'zh-CN'},
     ]
 
-    TRIM_SECTION_STEP = 0.9
+    # TRIM_SECTION_STEP = 0.9
     TRIM_SECTION_STEP_DIVIDER = 3
     TRIM_SECTION_FINAL_STEP = 0.1
 
@@ -69,3 +69,4 @@ class Constants():
     DIVIDED_SECTIONS_TIME = 4
     RETRIES_AFTER_API_ERROR = 4
     MAX_OCCURENCES_IN_ONE_SECTION = 7
+    TRIM_SECTION_STEP = 0.2

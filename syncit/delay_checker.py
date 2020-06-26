@@ -2,6 +2,7 @@ import time
 import threading
 import uuid
 import logging
+import numpy as np
 from syncit.constants import Constants
 from logger_setup import setup_logging
 from syncit.subtitle_parser import SubtitleParser
@@ -179,6 +180,37 @@ class DelayChecker():
 
         logger.debug(f'Filtered Grouped Results: {filtered_grouped_results}')
         return filtered_grouped_results
+
+    def trim_section(self, start, end, ids):
+        """
+        Trim a section of hot words.
+
+        Params:
+            start (float): Start time.
+            end (float): End time.
+            ids (list of str): IDs to check for.
+        
+        Returns:
+            list of dicts: The ids and their start time.
+                id (str): ID of word.
+                start (float): Start time of id after being trimmed.
+        """
+
+        results = []
+        threads = []
+        for current_start in np.arange(start, end, Constants.TRIM_SECTION_STEP):
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(current_start, end, ids, results))
+            thread.start()
+            threads.append(thread)
+        
+        while True:
+            sorted_results = sorted(results, lambda result: result['start'])
+            results_found = []
+            for result in results:
+                for result_item in result['ids']:
+                    id = result_item['id']
+                    occurences = result_item['occurences']                    
+
 
     def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list):
         """
