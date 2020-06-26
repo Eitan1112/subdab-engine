@@ -61,6 +61,10 @@ class DelayChecker():
         grouped_sections = self.get_occurences_for_grouped_sections(
             grouped_sections)
         grouped_sections = self.filter_grouped_sections(grouped_sections)
+        for section in grouped_sections:
+            section_ids = [item['id'] for item in section['ids']]
+            trimmed_results = self.trim_section(
+                section['start'], section['end'], section_ids)
 
     def get_grouped_sections(self):
         """
@@ -189,28 +193,48 @@ class DelayChecker():
             start (float): Start time.
             end (float): End time.
             ids (list of str): IDs to check for.
-        
+
         Returns:
             list of dicts: The ids and their start time.
                 id (str): ID of word.
                 start (float): Start time of id after being trimmed.
         """
 
+        logger.debug(
+            f'Start trimming. Start: {start}. End: {end}. Ids: {ids}.')
         results = []
         threads = []
         for current_start in np.arange(start, end, Constants.TRIM_SECTION_STEP):
-            thread = threading.Thread(target=self.get_hot_words_occurences, args=(current_start, end, ids, results))
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(
+                current_start, end, ids, results))
             thread.start()
             threads.append(thread)
-        
-        while True:
-            sorted_results = sorted(results, lambda result: result['start'])
-            results_found = []
-            for result in results:
-                for result_item in result['ids']:
-                    id = result_item['id']
-                    occurences = result_item['occurences']                    
 
+        while True:
+            final_ids_times = []
+            sorted_results = sorted(
+                results, key=lambda result: result['start'])
+            for idx, single_timestamp_results in enumerate(sorted_results[:-1]):
+                for current_result in single_timestamp_results['ids']:
+                    logger.debug(f'Current result: {current_result}')
+                    if(current_result['occurences'] != 1):
+                        continue
+                    for next_result in results[idx + 1]['ids']:
+                        if(next_result['id'] == current_result['id'] and next_result['occurences'] == 0):
+                            final_ids_times.append(
+                                {'id': current_result['id'], 'start': single_timestamp_results['start']})
+                            if(len(final_ids_times) == len(ids)):
+                                logger.debug(
+                                    f'Final ids times returned: {final_ids_times}.')
+                                return final_ids_times
+
+            all_threads_finished = all([thread.isAlive()
+                                        for thread in threads])
+            if(all_threads_finished):
+                break
+
+        logger.error(
+            f'Unable to find trimmed time. Results: {results}. Final ids times: {final_ids_times}')
 
     def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list):
         """
