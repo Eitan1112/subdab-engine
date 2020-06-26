@@ -163,7 +163,7 @@ class DelayChecker():
                 end (float): End time.
                 ids (list of dicts): list of ids of words in the section.
                     id (str): The id.
-                    occurences (NoneType): The occurences of the id in the timestamp.
+                    occurences (int): The occurences of the id in the timestamp.
 
         Returns:
             (list of dicts): The grouped sections without falty words.
@@ -177,12 +177,10 @@ class DelayChecker():
         # Remove words who in at least one section, they were found more then the threshold set
         ids_to_remove = [item['id'] for section in grouped_sections for item in section['ids']
                          if item['occurences'] > Constants.MAX_OCCURENCES_IN_ONE_SECTION]
-        
-        ids_of_grouped_sections = [item['id'] for section in grouped_sections for item in section['ids']]
         logger.debug(f'ids to remove: {ids_to_remove}')
+
+        ids_of_grouped_sections = [item['id'] for section in grouped_sections for item in section['ids'] if item['occurences'] > 0]
         ids_to_remove += [id for id in ids_of_grouped_sections if ids_of_grouped_sections.count(id) > Constants.MAX_OCCURENCES_FOR_ONE_WORD]
-        
-        logger.debug(f'new ids to remove: {ids_to_remove}')
 
         filtered_grouped_results = []
         for section in grouped_sections:
