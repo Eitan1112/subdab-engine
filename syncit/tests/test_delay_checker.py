@@ -10,7 +10,7 @@ from werkzeug.datastructures import FileStorage
 SAMPLE_AUDIO_PATH = os.path.join(Constants.SAMPLES_FOLDER, 'audio.m4a')
 SAMPLE_SUBTITLES_PATH = os.path.join(Constants.SAMPLES_FOLDER, 'subtitles.srt')
 START = 0
-END = 300
+END = 80
 AUDIO_LANGUAGE = 'en'
 SUBTITLES_LANGUAGE = 'en'
 
@@ -39,6 +39,4 @@ class TestDelayChecker(unittest.TestCase):
 
 
     def test_get_occurences_for_grouped_sections(self):
-
-        grouped_sections = self.dc.get_grouped_sections()
-        self.dc.get_occurences_for_grouped_sections(grouped_sections)
+        self.dc.check_delay()

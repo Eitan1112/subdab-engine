@@ -104,6 +104,7 @@ class Converter():
 
         recognizer = sr.Recognizer()
         audio_file = sr.AudioFile(self.audio)
+        logger.debug(f'Start: {start}. End: {end}.')
 
         with audio_file as source:
             duration = end - start
@@ -121,7 +122,7 @@ class Converter():
             if(url is None):
                 raise Exception(f'Convert speech to text server url (lambda) is None.')
             
-            for i in range(Constants.RETRIES_AFTER_API_ERROR):
+            for _ in range(Constants.RETRIES_AFTER_API_ERROR):
                 res = self.session.post(url, data=data)
                 if(res.status_code == 200):
                     return res.text

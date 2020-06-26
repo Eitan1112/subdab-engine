@@ -1,3 +1,4 @@
+import time
 import threading
 import uuid
 import logging
@@ -41,7 +42,8 @@ class DelayChecker():
         self.sp = SubtitleParser(subtitles_file, subtitles_language)
         self.audio_language = audio_language
         self.subtitles_language = subtitles_language
-        self.hot_words = self.sp.get_valid_hot_words(start, end, audio_language)
+        self.hot_words = self.sp.get_valid_hot_words(
+            start, end, audio_language)
         logger.debug(f'Hot words: {self.hot_words} start: {start} end: {end}')
         self.falty_delays = []
 
@@ -54,8 +56,8 @@ class DelayChecker():
         """
 
         grouped_sections = self.get_grouped_sections()
-        self.get_occurences_for_grouped_sections(grouped_sections)
-
+        grouped_sections = self.get_occurences_for_grouped_sections(grouped_sections)
+        grouped_sections = self.filter_grouped_sections(grouped_sections)
 
     def get_grouped_sections(self):
         """
@@ -69,25 +71,31 @@ class DelayChecker():
                 start (float): Start time.
                 end (float): End time.
         """
-        
+
         grouped_sections = []
         for section_start in range(self.start, self.end, Constants.DIVIDED_SECTIONS_TIME):
-            section_end = section_start + Constants.DIVIDED_SECTIONS_TIME + Constants.ONE_WORD_AUDIO_TIME 
-            if(section_end > self.end): section_end = self.end # Handle edge case where the end time is after the audio end time
-            section_item = {'ids': [], 'start': section_start, 'end': section_end}
+            section_end = section_start + Constants.DIVIDED_SECTIONS_TIME + \
+                Constants.ONE_WORD_AUDIO_TIME
+            if(section_end > self.end):
+                section_end = self.end  # Handle edge case where the end time is after the audio end time
+            section_item = {'ids': [],
+                            'start': section_start, 'end': section_end}
 
             # Append ids of hot words inside timespan
             for hot_word_item in self.hot_words:
-                hot_word_start = hot_word_item['start'] - Constants.DELAY_RADIUS
+                hot_word_start = hot_word_item['start'] - \
+                    Constants.DELAY_RADIUS
                 hot_word_end = hot_word_item['end'] + Constants.DELAY_RADIUS
                 is_word_in_section = hot_word_start < section_end and hot_word_end > section_start
                 if(is_word_in_section):
-                    section_item['ids'].append({'id': hot_word_item['id'], 'occurences': None})
+                    section_item['ids'].append(
+                        {'id': hot_word_item['id'], 'occurences': None})
 
             grouped_sections.append(section_item)
 
         # Remove Empty Sections
-        grouped_sections = [section_item for section_item in grouped_sections if len(section_item['ids']) > 0]
+        grouped_sections = [section_item for section_item in grouped_sections if len(
+            section_item['ids']) > 0]
         logger.debug(f'Sections_items {grouped_sections}')
         return grouped_sections
 
@@ -102,7 +110,7 @@ class DelayChecker():
                     occurences (NoneType): The occurences of the id in the timestamp.
                 start (float): Start time.
                 end (float): End time.
-        
+
         Returns:
             list of dicts: The same list from the params with occurences inside.
                 ids (list of dicts): list of ids of words in the section.
@@ -118,17 +126,16 @@ class DelayChecker():
             start = section_item['start']
             end = section_item['end']
             ids = [item['id'] for item in section_item['ids']]
-            thread = threading.Thread(target=self.get_hot_words_occurences, args=(start, end, ids, results))
+            thread = threading.Thread(
+                target=self.get_hot_words_occurences, args=(start, end, ids, results))
             thread.start()
             threads.append(thread)
 
         # Wait for threads to finish
         [thread.join() for thread in threads]
-        
-        logger.debug(f'Final Results: {results}')
-            
 
-
+        logger.debug(f'Grouped Results with occurences: {results}')
+        return results
 
     def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list):
         """
@@ -139,17 +146,60 @@ class DelayChecker():
             end (float): End time.
             ids (list of str): List of ids.
             results (list): List to update the results (useful for threading)
-        
+
         Appending to results:
             list of dicts:
-                id (str): Id.
-                occurences (int): occurences of id in timestamp.
+                start (float): Start time.
+                end (float): End time.
+                ids (list of dicts): 
+                    id (str): ID of hot word.
+                    occurences (int): occurences of id in timestamp.
         """
-    
-        hot_words = [hot_word_item['hot_word'] for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
-        logger.debug(f'Checking occurences. Start: {start}. End: {end}. Words: {hot_words}. Ids: {ids}.')
-        transcript = self.converter.convert_audio_to_text(start, end, hot_words)
-        logger.debug(f'Transcript: {transcript}')
-        occurences = [{'id': id, 'occurences': transcript.split().count(hot_words[index])} for index,id in enumerate(ids)]
-        logger.debug(f'Start: {start}. End: {end}. Occurences: {occurences}')
-        results.append(occurences)
+
+        hot_words = [hot_word_item['hot_word']
+                     for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
+        transcript = self.converter.convert_audio_to_text(
+            start, end, hot_words)
+        ids = [{'id': id, 'occurences': transcript.split().count(
+            hot_words[index])} for index, id in enumerate(ids)]
+        results.append({'start': start, 'end': end, 'ids': ids})
+
+    def filter_grouped_sections(self, grouped_sections):
+        """
+        Filter the grouped sections and remove falty ones.
+
+        Params:
+            grouped_sections (list of dicts): The section with their hot words.
+                start (float): Start time.
+                end (float): End time.
+                ids (list of dicts): list of ids of words in the section.
+                    id (str): The id.
+                    occurences (NoneType): The occurences of the id in the timestamp.
+
+        Returns:
+            (list of dicts): The grouped sections without falty words.
+                ids (list of dicts): list of ids of words in the section.
+                    id (str): The id.
+                    occurences (int): The occurences of the id in the timestamp.
+                start (float): Start time.
+                end (float): End time.
+        """
+
+
+        # Remove words who in at least one section, they were found more then the threshold set
+        ids_to_remove = [item['id'] for section in grouped_sections for item in section['ids'] if item['occurences'] > Constants.MAX_OCCURENCES_IN_ONE_SECTION]
+        logger.debug(f'ids to remove: {ids_to_remove}')
+
+        filtered_grouped_results = []
+        for section in grouped_sections:
+            filtered_section = {'start': section['start'], 'end': section['end'], 'ids': []}
+            for item in section['ids']:
+                # Remove word from ids_to_remove
+                if(item['id'] not in ids_to_remove and item['occurences'] != 0):
+                    filtered_section['ids'].append(item)
+
+            if(len(filtered_section['ids']) > 0):
+                filtered_grouped_results.append(filtered_section)
+            
+        logger.debug(f'Filtered Grouped Results: {filtered_grouped_results}')
+        return filtered_grouped_results

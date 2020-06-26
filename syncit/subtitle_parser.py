@@ -147,7 +147,7 @@ class SubtitleParser():
             # If no translation is needed -> Append the word and continue.
             if(target_language == self.language):
                 valid_hot_words.append({
-                    'id': uuid.uuid4().hex[:10],
+                    'id': f'{hot_word}-{uuid.uuid4().hex[:6]}',
                     'hot_word': hot_word,
                     'subtitles': subtitles,
                     'start': subtitles_start,
