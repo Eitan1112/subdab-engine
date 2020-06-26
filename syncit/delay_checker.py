@@ -46,6 +46,7 @@ class DelayChecker():
             start, end, audio_language)
         logger.debug(f'Hot words: {self.hot_words} start: {start} end: {end}')
         self.falty_delays = []
+        self.checked = []
 
     def check_delay(self):
         """
@@ -56,7 +57,8 @@ class DelayChecker():
         """
 
         grouped_sections = self.get_grouped_sections()
-        grouped_sections = self.get_occurences_for_grouped_sections(grouped_sections)
+        grouped_sections = self.get_occurences_for_grouped_sections(
+            grouped_sections)
         grouped_sections = self.filter_grouped_sections(grouped_sections)
 
     def get_grouped_sections(self):
@@ -137,33 +139,6 @@ class DelayChecker():
         logger.debug(f'Grouped Results with occurences: {results}')
         return results
 
-    def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list):
-        """
-        Gets the occurences of the hot words inside the timespan.
-
-        Params:
-            start (float): Start time.
-            end (float): End time.
-            ids (list of str): List of ids.
-            results (list): List to update the results (useful for threading)
-
-        Appending to results:
-            list of dicts:
-                start (float): Start time.
-                end (float): End time.
-                ids (list of dicts): 
-                    id (str): ID of hot word.
-                    occurences (int): occurences of id in timestamp.
-        """
-
-        hot_words = [hot_word_item['hot_word']
-                     for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
-        transcript = self.converter.convert_audio_to_text(
-            start, end, hot_words)
-        ids = [{'id': id, 'occurences': transcript.split().count(
-            hot_words[index])} for index, id in enumerate(ids)]
-        results.append({'start': start, 'end': end, 'ids': ids})
-
     def filter_grouped_sections(self, grouped_sections):
         """
         Filter the grouped sections and remove falty ones.
@@ -185,14 +160,15 @@ class DelayChecker():
                 end (float): End time.
         """
 
-
         # Remove words who in at least one section, they were found more then the threshold set
-        ids_to_remove = [item['id'] for section in grouped_sections for item in section['ids'] if item['occurences'] > Constants.MAX_OCCURENCES_IN_ONE_SECTION]
+        ids_to_remove = [item['id'] for section in grouped_sections for item in section['ids']
+                         if item['occurences'] > Constants.MAX_OCCURENCES_IN_ONE_SECTION]
         logger.debug(f'ids to remove: {ids_to_remove}')
 
         filtered_grouped_results = []
         for section in grouped_sections:
-            filtered_section = {'start': section['start'], 'end': section['end'], 'ids': []}
+            filtered_section = {
+                'start': section['start'], 'end': section['end'], 'ids': []}
             for item in section['ids']:
                 # Remove word from ids_to_remove
                 if(item['id'] not in ids_to_remove and item['occurences'] != 0):
@@ -200,6 +176,46 @@ class DelayChecker():
 
             if(len(filtered_section['ids']) > 0):
                 filtered_grouped_results.append(filtered_section)
-            
+
         logger.debug(f'Filtered Grouped Results: {filtered_grouped_results}')
         return filtered_grouped_results
+
+    def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list):
+        """
+        Gets the occurences of the hot words inside the timespan.
+
+        Params:
+            start (float): Start time.
+            end (float): End time.
+            ids (list of str): List of ids.
+            results (list): List to update the results (useful for threading)
+
+        Appending to results:
+            list of dicts:
+                start (float): Start time.
+                end (float): End time.
+                ids (list of dicts): 
+                    id (str): ID of hot word.
+                    occurences (int): occurences of id in timestamp.
+        """
+
+        ids_checked = [id for id in ids for checked in self.checked if id == checked['id']
+                       and start >= checked['start'] and end <= checked['end'] and checked['occurences'] == 0]
+        hot_words = [hot_word_item['hot_word']
+                     for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
+
+        if(len(ids_checked) == len(ids)):
+            logger.debug(
+                f'Already checked item. Start: {start}. End: {end}. ids: {ids}. ids_checked: {ids_checked}. Checked: {self.checked}')
+            timespan_result = [{'id': id, 'occurences': 0}
+                               for index, id in enumerate(ids)]
+
+        else:
+            transcript = self.converter.convert_audio_to_text(
+                start, end, hot_words)
+            timespan_result = [{'id': id, 'occurences': transcript.split().count(
+                hot_words[index])} for index, id in enumerate(ids)]
+            self.checked += [{'start': start, 'end': end, 'id': item['id'],
+                              'occurences': item['occurences']} for item in timespan_result]
+
+        results.append({'start': start, 'end': end, 'ids': timespan_result})

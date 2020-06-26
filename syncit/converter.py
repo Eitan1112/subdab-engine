@@ -104,7 +104,6 @@ class Converter():
 
         recognizer = sr.Recognizer()
         audio_file = sr.AudioFile(self.audio)
-        logger.debug(f'Start: {start}. End: {end}.')
 
         with audio_file as source:
             duration = end - start
