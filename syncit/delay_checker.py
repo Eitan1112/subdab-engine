@@ -67,10 +67,13 @@ class DelayChecker():
             section_ids = [item['id'] for item in section['ids']]
             trimmed_results = self.trim_section(
                 section['start'], section['end'], section_ids)
-            for trimmed_result in trimmed_results:
-                subtitles_start = [hot_word_item['start'] for hot_word_item in self.hot_words if hot_word_item['id'] == trimmed_result['id']][0]
+            verified_trimmed_results = self.verify_trimmed_results(trimmed_results)
+            for trimmed_result in verified_trimmed_results:
+                subtitles_start = [hot_word_item['start']
+                                   for hot_word_item in self.hot_words if hot_word_item['id'] == trimmed_result['id']][0]
                 delay = subtitles_start - trimmed_result['start']
-                logger.debug(f'Verifing delay {delay} of word id {trimmed_result["id"]}')
+                logger.debug(
+                    f'Verifing delay {delay} of word id {trimmed_result["id"]}')
                 is_verified = self.verify_delay(delay)
                 if(is_verified):
                     return delay
@@ -179,8 +182,10 @@ class DelayChecker():
                          if item['occurences'] > Constants.MAX_OCCURENCES_IN_ONE_SECTION]
         logger.debug(f'ids to remove: {ids_to_remove}')
 
-        ids_of_grouped_sections = [item['id'] for section in grouped_sections for item in section['ids'] if item['occurences'] > 0]
-        ids_to_remove += [id for id in ids_of_grouped_sections if ids_of_grouped_sections.count(id) > Constants.MAX_OCCURENCES_FOR_ONE_WORD]
+        ids_of_grouped_sections = [
+            item['id'] for section in grouped_sections for item in section['ids'] if item['occurences'] > 0]
+        ids_to_remove += [id for id in ids_of_grouped_sections if ids_of_grouped_sections.count(
+            id) > Constants.MAX_OCCURENCES_FOR_ONE_WORD]
 
         filtered_grouped_results = []
         for section in grouped_sections:
@@ -237,7 +242,8 @@ class DelayChecker():
                                 {'id': current_result['id'], 'start': single_timestamp_results['start']})
                             if(len(final_ids_times) == len(ids)):
                                 stop = True
-                                logger.debug(f'Final ids times returned: {final_ids_times}.')
+                                logger.debug(
+                                    f'Final ids times returned: {final_ids_times}.')
                                 return final_ids_times
 
             # Break loop if all threads are finished
@@ -246,6 +252,42 @@ class DelayChecker():
 
         logger.error(
             f'Unable to find trimmed time. Results: {sorted_results}. Final ids times: {final_ids_times}')
+
+    def verify_trimmed_results(self, trimmed_results):
+        """
+        Verifies the trimming results before verifing a delay.
+
+        Params:
+            trim_results (list of dicts): The ids and their start time.
+                id (str): ID of word.
+                start (float): Start time of id after being trimmed.
+
+        Returns:
+            list of dicts: Same list without falty times.
+        """
+
+        logger.debug(f'Verifing trimmed results: {trimmed_results}')
+        threads = []
+        occurences_results = []
+
+        for result in trimmed_results:
+            logger.debug(f'Verifing result: {result}')
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(
+                result['start'], result['start'] + Constants.ONE_WORD_AUDIO_TIME, [result['id']], occurences_results))
+            thread.start()
+            threads.append(thread)
+
+        # Wait for threads to finish
+        [thread.join() for thread in threads]
+
+        verified_trimmed_results = []
+        for result in occurences_results:
+            if(result['ids'][0]['occurences'] > 0):
+                verified_trimmed_results.append(
+                    {'id': result['ids'][0]['id'], 'start': result['start']})
+
+        logger.debug(f'Verified trimmed results: {verified_trimmed_results}')
+        return verified_trimmed_results
 
     def verify_delay(self, delay: float):
         """
@@ -268,7 +310,6 @@ class DelayChecker():
         results = []
         stop = False
 
-
         # Check if the hot words are translated. If so -> Change the samples to pass amount.
         if(self.audio_language == self.subtitles_language):
             samples_to_pass = Constants.VERIFY_DELAY_SAMPLES_TO_PASS
@@ -278,18 +319,20 @@ class DelayChecker():
         for hot_word_item in hot_words:
             id = hot_word_item['id']
             subtitles_start = hot_word_item['start']
- 
+
             transcript_start = (subtitles_start %
                                 Constants.DELAY_CHECKER_SECTIONS_TIME) + delay
             transcript_end = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + \
                 delay + Constants.ONE_WORD_AUDIO_TIME
 
-            thread = threading.Thread(target=self.get_hot_words_occurences, args=(transcript_start, transcript_end, [id], results, lambda: stop))
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(
+                transcript_start, transcript_end, [id], results, lambda: stop))
             thread.start()
             threads.append(thread)
-        
+
         while True:
-            similars = len([result for result in results if result['ids'][0]['occurences'] > 0])
+            similars = len(
+                [result for result in results if result['ids'][0]['occurences'] > 0])
             unsimilars = len(results) - similars
             if(similars >= samples_to_pass):
                 logger.debug(f'Found delay: {delay}')
@@ -299,10 +342,10 @@ class DelayChecker():
             if(unsimilars >= samples_to_check - samples_to_pass):
                 # Add delay to falty occurences. Replace the first index of None in the list with the delay.
                 self.falty_delays.append(float(delay))
-                logger.debug(f"Added {delay} to falty delays. Falty delays: {self.falty_delays}")
+                logger.debug(
+                    f"Added {delay} to falty delays. Falty delays: {self.falty_delays}")
                 stop = True
                 return False
-
 
     def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list, stop=lambda: False):
         """
