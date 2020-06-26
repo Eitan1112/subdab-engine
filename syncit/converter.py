@@ -125,9 +125,8 @@ class Converter():
             for _ in range(Constants.RETRIES_AFTER_API_ERROR):
                 if(stop() is True):
                     return ''
-                res = self.session.post(url, data=data)
+                res = self.session.post(url, data=data, timeout=Constants.REQUEST_TIMEOUT)
                 if(res.status_code == 200):
-                    logger.debug(f'Result: {res.text}')
                     return res.text
             raise Exception(f'Recieved status code {res.status_code} from speech to text API. Response: {res.text}.')
 

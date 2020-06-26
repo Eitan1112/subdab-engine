@@ -86,7 +86,7 @@ def check_delay():
 
     try:
         dc = DelayChecker(audio_file, start, end, subtitles_file, audio_language, subtitles_language)
-        delay = dc.check_delay_in_timespan()
+        delay = dc.check_delay()
 
         if(delay is None):
             return Response(json.dumps({}), 200)

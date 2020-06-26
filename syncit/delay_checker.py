@@ -1,3 +1,4 @@
+import random
 import ctypes
 import threading
 import time
@@ -66,6 +67,13 @@ class DelayChecker():
             section_ids = [item['id'] for item in section['ids']]
             trimmed_results = self.trim_section(
                 section['start'], section['end'], section_ids)
+            for trimmed_result in trimmed_results:
+                subtitles_start = [hot_word_item['start'] for hot_word_item in self.hot_words if hot_word_item['id'] == trimmed_result['id']][0]
+                delay = subtitles_start - trimmed_result['start']
+                logger.debug(f'Verifing delay {delay} of word id {trimmed_result["id"]}')
+                is_verified = self.verify_delay(delay)
+                if(is_verified):
+                    return delay
 
     def get_grouped_sections(self):
         """
@@ -169,7 +177,12 @@ class DelayChecker():
         # Remove words who in at least one section, they were found more then the threshold set
         ids_to_remove = [item['id'] for section in grouped_sections for item in section['ids']
                          if item['occurences'] > Constants.MAX_OCCURENCES_IN_ONE_SECTION]
+        
+        ids_of_grouped_sections = [item['id'] for section in grouped_sections for item in section['ids']]
         logger.debug(f'ids to remove: {ids_to_remove}')
+        ids_to_remove += [id for id in ids_of_grouped_sections if ids_of_grouped_sections.count(id) > Constants.MAX_OCCURENCES_FOR_ONE_WORD]
+        
+        logger.debug(f'new ids to remove: {ids_to_remove}')
 
         filtered_grouped_results = []
         for section in grouped_sections:
@@ -207,7 +220,6 @@ class DelayChecker():
         stop = False
         threads = []
         for current_start in np.arange(start, end, Constants.TRIM_SECTION_STEP):
-            logger.debug(f'Starting thread. Start: {current_start}.')
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(
                 current_start, end, ids, results, lambda: stop))
             thread.start()
@@ -230,13 +242,69 @@ class DelayChecker():
                                 logger.debug(f'Final ids times returned: {final_ids_times}.')
                                 return final_ids_times
 
-            all_threads_finished = all([thread.is_alive()
-                                        for thread in threads])
-            if(all_threads_finished):
+            # Break loop if all threads are finished
+            if(len(results) == len(threads)):
                 break
 
         logger.error(
-            f'Unable to find trimmed time. Results: {results}. Final ids times: {final_ids_times}')
+            f'Unable to find trimmed time. Results: {sorted_results}. Final ids times: {final_ids_times}')
+
+    def verify_delay(self, delay: float):
+        """
+        Checks if the delay is correct.
+
+        Params:
+            delay (float): The delay.
+
+        Returns:
+            bool: Whether the delay is correct or not.
+        """
+
+        logger.debug(f'Starting to verify delay: {delay}')
+        similars = 0
+        unsimilars = 0
+        hot_words = self.hot_words[:]
+        random.shuffle(hot_words)
+        samples_to_check = Constants.VERIFY_DELAY_SAMPLES_TO_CHECK
+        threads = []
+        results = []
+        stop = False
+
+
+        # Check if the hot words are translated. If so -> Change the samples to pass amount.
+        if(self.audio_language == self.subtitles_language):
+            samples_to_pass = Constants.VERIFY_DELAY_SAMPLES_TO_PASS
+        else:
+            samples_to_pass = Constants.VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS
+
+        for hot_word_item in hot_words:
+            id = hot_word_item['id']
+            subtitles_start = hot_word_item['start']
+ 
+            transcript_start = (subtitles_start %
+                                Constants.DELAY_CHECKER_SECTIONS_TIME) + delay
+            transcript_end = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + \
+                delay + Constants.ONE_WORD_AUDIO_TIME
+
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(transcript_start, transcript_end, [id], results, lambda: stop))
+            thread.start()
+            threads.append(thread)
+        
+        while True:
+            similars = len([result for result in results if result['ids'][0]['occurences'] > 0])
+            unsimilars = len(results) - similars
+            if(similars >= samples_to_pass):
+                logger.debug(f'Found delay: {delay}')
+                stop = True
+                return True
+
+            if(unsimilars >= samples_to_check - samples_to_pass):
+                # Add delay to falty occurences. Replace the first index of None in the list with the delay.
+                self.falty_delays.append(float(delay))
+                logger.debug(f"Added {delay} to falty delays. Falty delays: {self.falty_delays}")
+                stop = True
+                return False
+
 
     def get_hot_words_occurences(self, start: float, end: float, ids: list, results: list, stop=lambda: False):
         """
