@@ -3,10 +3,9 @@ import re
 import random
 from syncit.constants import Constants
 from syncit.helpers import convert_subs_time, clean_text
-from google.cloud import translate_v2 as translate
-from google.oauth2 import service_account
 import logging
 import os
+from syncit.translate import Translator
 from chardet import detect as detect_encoding
 from langdetect import detect as detect_language
 from logger_setup import setup_logging
@@ -16,8 +15,6 @@ load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
 
-translate_client = translate.Client()
-
 
 class SubtitleParser():
     """
@@ -26,17 +23,20 @@ class SubtitleParser():
     Attributes:
         subtitles (str): Subtitles file content.
         re_subs (list): List of tuples containing the parsed subtitles.
-        language (str): Language of the subtitles.
+        subtitles_language (str): Language of the subtitles.
+        audio_language (str): Language of the audio.
         encoding (str): The encoding of the subtitles.
+        translator (Translator): Translator instace with the languages loaded.
     """
 
-    def __init__(self, subtitles_file, language: str):
+    def __init__(self, subtitles_file, subtitles_language: str, audio_language: str):
         """
         Constructor for the SubtitlesParser class.
 
         Params:
             subtitles_file (FileStorage): File with the subtitles loaded.
-            language (str): The language of the subtitles.
+            subtitles_language (str): The language of the subtitles.
+            audio_language (str): The language to get the hot words in (the audio language).
         """
 
         subtitles_binary = subtitles_file.read()
@@ -46,20 +46,25 @@ class SubtitleParser():
         logger.debug(f'Subtitles Encoding: {encoding}')
         logger.debug(f'Subtitles[:100]: {[self.subtitles[:1000]]}')
         self.read_subtitles()
+        self.audio_language = audio_language
 
         # Detect subtitles language
-        if(language == 'ad'): # ad = Auto Detect
+        if(subtitles_language == 'ad'):  # ad = Auto Detect
             detected_language = detect_language(self.subtitles)
             logger.debug(f"Subtitles language detected as {detected_language}")
 
             # True if the detected language in google's supported languages
-            language_items = any(map(lambda lang: lang['language'] == detected_language, translate_client.get_languages()))
+            language_items = any(map(
+                lambda lang: lang['language'] == detected_language, Constants.GOOGLE_LANGUAGES))
             if(language_items is False):
-                raise Exception(f'Detected language {detected_language} is not supported.')
-            self.language = detected_language
-            
+                raise Exception(
+                    f'Detected language {detected_language} is not supported.')
+            self.subtitles_language = detected_language
+
         else:
-            self.language = language
+            self.subtitles_language = subtitles_language
+
+        self.translator = Translator(self.subtitles_language, audio_language)
 
     def read_subtitles(self):
         """
@@ -103,14 +108,13 @@ class SubtitleParser():
 
         return (subtitles, start, end)
 
-    def get_valid_hot_words(self, start: float, end: float, target_language=None):
+    def get_valid_hot_words(self, start: float, end: float):
         """
         Loops through the subtitles and finds valid hot words in the specified timespan.
 
         Params:
             start (float): start time.
             end (float): end time.
-            target_language (str): The language to get the hot words in. If None, the original language.
 
         Returns:
             tuple: A tuple of dicts containing: {id, hot_word, subtitles, start, end}.
@@ -145,7 +149,7 @@ class SubtitleParser():
                 continue
 
             # If no translation is needed -> Append the word and continue.
-            if(target_language == self.language):
+            if(self.audio_language == self.subtitles_language):
                 valid_hot_words.append({
                     'id': f'{hot_word}-{uuid.uuid4().hex[:6]}',
                     'hot_word': hot_word,
@@ -155,9 +159,8 @@ class SubtitleParser():
                 })
             # If translation is needed -> Translate the word and append the word.
             else:
-                response = translate_client.translate(
-                    subtitles, target_language=target_language, source_language=self.language)
-                translated_hot_words = clean_text(response['translatedText'])
+                translated_text = self.translator.translate(subtitles)
+                translated_hot_words = clean_text(translated_text)
 
                 # Make sure the cleaned translated word is not None
                 if(translated_hot_words is None):
@@ -168,7 +171,7 @@ class SubtitleParser():
                 if(len(translated_hot_word) < 2):
                     continue
                 logger.debug(
-                    f"Translataion. From '{self.language}' to '{target_language}'. From '{subtitles}' to '{translated_hot_words}'. Hot word: '{translated_hot_word}'")
+                    f"Translataion. From '{self.subtitles_language}' to '{self.audio_language}'. From '{subtitles}' to '{translated_hot_words}'. Hot word: '{translated_hot_word}'")
 
                 valid_hot_words.append({
                     'id': f'{translated_hot_word}-{uuid.uuid4().hex[:6]}',

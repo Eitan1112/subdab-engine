@@ -42,11 +42,11 @@ class DelayChecker():
         self.converter = Converter(audio_file, audio_language)
         self.start = start
         self.end = end
-        self.sp = SubtitleParser(subtitles_file, subtitles_language)
+        self.sp = SubtitleParser(
+            subtitles_file, subtitles_language, audio_language)
         self.audio_language = audio_language
         self.subtitles_language = subtitles_language
-        self.hot_words = self.sp.get_valid_hot_words(
-            start, end, audio_language)
+        self.hot_words = self.sp.get_valid_hot_words(start, end)
         logger.debug(f'Hot words: {self.hot_words} start: {start} end: {end}')
         self.falty_delays = []
         self.checked = []
@@ -65,16 +65,22 @@ class DelayChecker():
         grouped_sections = self.filter_grouped_sections(grouped_sections)
 
         # Filter out words not in grouped_sections from hot words
-        ids_in_grouped_sections = list(set([item['id'] for section in grouped_sections for item in section['ids']]))
-        self.hot_words = [hot_word_item for hot_word_item in self.hot_words[:] if hot_word_item['id'] in ids_in_grouped_sections]
+        ids_in_grouped_sections = list(
+            set([item['id'] for section in grouped_sections for item in section['ids']]))
+        self.hot_words = [hot_word_item for hot_word_item in self.hot_words[:]
+                          if hot_word_item['id'] in ids_in_grouped_sections]
         logger.debug(f'New hot words: {self.hot_words}')
-        
+        if(len(self.hot_words) < Constants.SAMPLES_TO_CHECK):
+            return
+
         for section in grouped_sections:
             section_ids = [item['id'] for item in section['ids']]
             trimmed_results = self.trim_section(
                 section['start'], section['end'], section_ids)
-            if(trimmed_results == None): continue
-            verified_trimmed_results = self.verify_trimmed_results(trimmed_results)
+            if(trimmed_results == None):
+                continue
+            verified_trimmed_results = self.verify_trimmed_results(
+                trimmed_results)
 
             for trimmed_result in verified_trimmed_results:
                 # Find the original time of the word in the subtitles
@@ -336,8 +342,10 @@ class DelayChecker():
                 transcript_start, transcript_end, [hot_word_item['id']], results, lambda: stop))
             thread.start()
             threads.append(thread)
-
+        
+        logger.debug(f'Started {len(threads)} threads')
         while True:
+            logger.debug(f'Verify delay results: {results}')
             similars = len(
                 [result for result in results if result['ids'][0]['occurences'] > 0])
             unsimilars = len(results) - similars
@@ -395,5 +403,6 @@ class DelayChecker():
             self.checked += [{'start': start, 'end': end, 'id': item['id'],
                               'occurences': item['occurences']} for item in timespan_result if item['occurences'] == 0]
 
-        logger.debug(f"Checked Occurences: {({'start': start, 'end': end, 'ids': timespan_result})}.")
+        logger.debug(
+            f"Checked Occurences: {({'start': start, 'end': end, 'ids': timespan_result})}.")
         results.append({'start': start, 'end': end, 'ids': timespan_result})

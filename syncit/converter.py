@@ -111,7 +111,6 @@ class Converter():
             audio = recognizer.record(source, offset=start, duration=duration)
 
         try:
-            logger.debug(f'Converter language: {self.language}')
             data = {
                 'frame_data_base64': base64.b64encode(audio.frame_data),
                 'sample_rate': audio.sample_rate,
