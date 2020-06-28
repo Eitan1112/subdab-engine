@@ -64,6 +64,9 @@ class Constants():
     SAMPLES_FOLDER = os.path.join('syncit', 'tests', 'samples')
 
     ##### New Delay Checker #####
+    FILTER_HOT_WORDS_SECTION = 50
+    FILTER_HOT_WORDS_ADD_TO_END = 10
+    FILTER_HOT_WORDS_MAXIMUM_OCCURENCES = 45
     DIVIDED_SECTIONS_TIME = 4
     RETRIES_AFTER_API_ERROR = 4
     MAX_OCCURENCES_IN_ONE_SECTION = 5
@@ -183,3 +186,5 @@ class Constants():
                         {'language': 'zu', 'name': 'Zulu'},
                         {'language': 'he', 'name': 'Hebrew'},
                         {'language': 'zh', 'name': 'Chinese (Simplified)'}]
+
+

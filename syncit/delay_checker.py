@@ -59,19 +59,14 @@ class DelayChecker():
             float: The delay.
         """
 
+        self.hot_words = self.filter_hot_words()
+        if(len(self.hot_words) < Constants.SAMPLES_TO_CHECK):
+            logger.debug(f'Not enough hot words, aborting.')
+            return
         grouped_sections = self.get_grouped_sections()
         grouped_sections = self.get_occurences_for_grouped_sections(
             grouped_sections)
         grouped_sections = self.filter_grouped_sections(grouped_sections)
-
-        # Filter out words not in grouped_sections from hot words
-        ids_in_grouped_sections = list(
-            set([item['id'] for section in grouped_sections for item in section['ids']]))
-        self.hot_words = [hot_word_item for hot_word_item in self.hot_words[:]
-                          if hot_word_item['id'] in ids_in_grouped_sections]
-        logger.debug(f'New hot words: {self.hot_words}')
-        if(len(self.hot_words) < Constants.SAMPLES_TO_CHECK):
-            return
 
         for section in grouped_sections:
             section_ids = [item['id'] for item in section['ids']]
@@ -92,6 +87,34 @@ class DelayChecker():
                 is_verified = self.verify_delay(delay)
                 if(is_verified):
                     return delay
+
+    def filter_hot_words(self):
+        """
+        Filter the hot words based on occurences in specific timespan.
+
+        Returns:
+            list of dicts: The hot words without the falty ones.
+        """
+
+        threads = []
+        results = []
+
+        for start in range(0, Constants.DELAY_CHECKER_SECTIONS_TIME, Constants.FILTER_HOT_WORDS_SECTION):
+            end = start + Constants.FILTER_HOT_WORDS_SECTION + Constants.FILTER_HOT_WORDS_ADD_TO_END
+            sections_ids = [hot_word_item['id'] for hot_word_item in self.hot_words if hot_word_item['start'] > start and hot_word_item['end'] < end - Constants.FILTER_HOT_WORDS_ADD_TO_END]
+            thread = threading.Thread(target=self.get_hot_words_occurences, args=(start, end, sections_ids, results))
+            thread.start()
+            threads.append(thread)
+        
+        # Wait for threads to finish
+        [thread.join() for thread in threads]
+        logger.debug(f'Filter hot words result: {results}')
+        filtered_hot_words_ids = [item['id'] for section in results for item in section['ids'] if item['occurences'] > 0 and item['occurences'] < Constants.FILTER_HOT_WORDS_MAXIMUM_OCCURENCES]
+        logger.debug(f'filtered_hot_words_ids: {filtered_hot_words_ids}')
+        filtered_hot_words = [hot_word_item for hot_word_item in self.hot_words if hot_word_item['id'] in filtered_hot_words_ids]
+        logger.debug(f'Filtered hot words: {filtered_hot_words}')
+        return filtered_hot_words
+
 
     def get_grouped_sections(self):
         """
@@ -345,7 +368,6 @@ class DelayChecker():
         
         logger.debug(f'Started {len(threads)} threads')
         while True:
-            logger.debug(f'Verify delay results: {results}')
             similars = len(
                 [result for result in results if result['ids'][0]['occurences'] > 0])
             unsimilars = len(results) - similars
