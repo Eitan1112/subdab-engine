@@ -171,6 +171,7 @@ class SubtitleParser():
                     f"Translataion. From '{self.language}' to '{target_language}'. From '{subtitles}' to '{translated_hot_words}'. Hot word: '{translated_hot_word}'")
 
                 valid_hot_words.append({
+                    'id': f'{translated_hot_word}-{uuid.uuid4().hex[:6]}',
                     'hot_word': translated_hot_word,
                     'subtitles': translated_hot_words,
                     'start': subtitles_start,
