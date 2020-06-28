@@ -71,9 +71,9 @@ class DelayChecker():
             for trimmed_result in verified_trimmed_results:
                 subtitles_start = [hot_word_item['start']
                                    for hot_word_item in self.hot_words if hot_word_item['id'] == trimmed_result['id']][0]
-                delay = subtitles_start - trimmed_result['start']
+                delay = trimmed_result['start'] - subtitles_start
                 logger.debug(
-                    f'Verifing delay {delay} of word id {trimmed_result["id"]}')
+                    f'Verifing delay {delay} of word id {trimmed_result["id"]}. Checked: {self.checked}')
                 is_verified = self.verify_delay(delay)
                 if(is_verified):
                     return delay
@@ -271,7 +271,7 @@ class DelayChecker():
         occurences_results = []
 
         for result in trimmed_results:
-            logger.debug(f'Verifing result: {result}')
+            logger.debug(f'Verifing result: {result}.')
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(
                 result['start'], result['start'] + Constants.ONE_WORD_AUDIO_TIME, [result['id']], occurences_results))
             thread.start()
@@ -305,6 +305,7 @@ class DelayChecker():
         unsimilars = 0
         hot_words = self.hot_words[:]
         random.shuffle(hot_words)
+        hot_words = hot_words[:Constants.SAMPLES_TO_CHECK]
         samples_to_check = Constants.VERIFY_DELAY_SAMPLES_TO_CHECK
         threads = []
         results = []
@@ -317,16 +318,13 @@ class DelayChecker():
             samples_to_pass = Constants.VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS
 
         for hot_word_item in hot_words:
-            id = hot_word_item['id']
-            subtitles_start = hot_word_item['start']
-
-            transcript_start = (subtitles_start %
+            transcript_start = (hot_word_item['start'] %
                                 Constants.DELAY_CHECKER_SECTIONS_TIME) + delay
-            transcript_end = (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME) + \
+            transcript_end = (hot_word_item['start'] % Constants.DELAY_CHECKER_SECTIONS_TIME) + \
                 delay + Constants.ONE_WORD_AUDIO_TIME
 
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(
-                transcript_start, transcript_end, [id], results, lambda: stop))
+                transcript_start, transcript_end, [hot_word_item['id']], results, lambda: stop))
             thread.start()
             threads.append(thread)
 
@@ -343,7 +341,7 @@ class DelayChecker():
                 # Add delay to falty occurences. Replace the first index of None in the list with the delay.
                 self.falty_delays.append(float(delay))
                 logger.debug(
-                    f"Added {delay} to falty delays. Falty delays: {self.falty_delays}")
+                    f"Added {delay} to falty delays. Results: {results} Falty delays: {self.falty_delays}")
                 stop = True
                 return False
 
@@ -375,13 +373,16 @@ class DelayChecker():
         if(len(ids_checked) == len(ids)):
             timespan_result = [{'id': id, 'occurences': 0}
                                for index, id in enumerate(ids)]
+            logger.debug(f"Already checked. Checking: {start}-{end}-{ids}. Checked: {[checked for id in ids for checked in self.checked if id == checked['id'] and start >= checked['start'] and end <= checked['end'] and checked['occurences'] == 0]}")
 
         else:
             transcript = self.converter.convert_audio_to_text(
                 start, end, hot_words, stop)
             timespan_result = [{'id': id, 'occurences': transcript.split().count(
                 hot_words[index])} for index, id in enumerate(ids)]
+            logger.debug(f"Adding to checked: {[{'start': start, 'end': end, 'id': item['id'], 'occurences': item['occurences']} for item in timespan_result]}")
             self.checked += [{'start': start, 'end': end, 'id': item['id'],
-                              'occurences': item['occurences']} for item in timespan_result]
+                              'occurences': item['occurences']} for item in timespan_result if item['occurences'] == 0]
 
+        logger.debug(f"Appending Results: {({'start': start, 'end': end, 'ids': timespan_result})}.")
         results.append({'start': start, 'end': end, 'ids': timespan_result})
