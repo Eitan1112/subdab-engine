@@ -2,24 +2,24 @@ import os
 
 
 class Constants():
-    MIN_ACCURACY = 0.65
-    SAMPLES_TO_CHECK = 20
-    SAMPLES_TO_PASS = 0.2  # 0 to 1
+    # MIN_ACCURACY = 0.65
+    # SAMPLES_TO_CHECK = 20
+    # SAMPLES_TO_PASS = 0.2  # 0 to 1
 
     DELAY_RADIUS = 22  # Seconds
 
-    INITIAL_DELAY_CHECK_STEP = 2  # Seconds
-    MAXIMUM_WORD_LENGTH = 1  # Seconds
-    DELAY_CHECK_DIVIDER = 4
-    MAX_OCCURENCES_OF_WORD_IN_RADIUS = 45
+    # INITIAL_DELAY_CHECK_STEP = 2  # Seconds
+    # MAXIMUM_WORD_LENGTH = 1  # Seconds
+    # DELAY_CHECK_DIVIDER = 4
+    # MAX_OCCURENCES_OF_WORD_IN_RADIUS = 45
 
-    MAX_OCCURENCES_TO_CHECK = 3
+    # MAX_OCCURENCES_TO_CHECK = 3
 
     ONE_WORD_AUDIO_TIME = 1  # How much seconds it takes to say one word (max)
 
-    SWITCH_TO_TRIMMING_ALGO_TIME = 5
+    # SWITCH_TO_TRIMMING_ALGO_TIME = 5
 
-    WORD_TIME_SECTIONS_DIVIDER = 8
+    # WORD_TIME_SECTIONS_DIVIDER = 8
 
     # In seconds, have to be synced with frontend.
     DELAY_CHECKER_SECTIONS_TIME = 300
