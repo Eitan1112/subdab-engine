@@ -99,7 +99,7 @@ class DelayChecker():
         threads = []
         results = []
 
-        for start in range(0, Constants.DELAY_CHECKER_SECTIONS_TIME, Constants.FILTER_HOT_WORDS_SECTION):
+        for start in range(self.start, self.end, Constants.FILTER_HOT_WORDS_SECTION):
             end = start + Constants.FILTER_HOT_WORDS_SECTION + Constants.FILTER_HOT_WORDS_ADD_TO_END
             sections_ids = [hot_word_item['id'] for hot_word_item in self.hot_words if hot_word_item['start'] > start and hot_word_item['end'] < end - Constants.FILTER_HOT_WORDS_ADD_TO_END]
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(start, end, sections_ids, results))

@@ -64,7 +64,7 @@ class Constants():
     SAMPLES_FOLDER = os.path.join('syncit', 'tests', 'samples')
 
     ##### New Delay Checker #####
-    FILTER_HOT_WORDS_SECTION = 50
+    FILTER_HOT_WORDS_SECTION = 35
     FILTER_HOT_WORDS_ADD_TO_END = 10
     FILTER_HOT_WORDS_MAXIMUM_OCCURENCES = 45
     DIVIDED_SECTIONS_TIME = 4
