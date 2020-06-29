@@ -4,6 +4,7 @@ import random
 from syncit.constants import Constants
 from syncit.helpers import convert_subs_time, clean_text
 import logging
+import threading
 import os
 from syncit.translate import Translator
 from chardet import detect as detect_encoding
@@ -117,7 +118,12 @@ class SubtitleParser():
             end (float): end time.
 
         Returns:
-            tuple: A tuple of dicts containing: {id, hot_word, subtitles, start, end}.
+            list: The hot words.
+                id (str): The word id.
+                hot_word (str): Hot word.
+                subtitles (str): The subtitles.
+                start (float): Start time.
+                end (float): End time.
         """
 
         valid_hot_words = []
@@ -149,42 +155,77 @@ class SubtitleParser():
                 continue
 
             # If no translation is needed -> Append the word and continue.
-            if(self.audio_language == self.subtitles_language):
-                valid_hot_words.append({
-                    'id': f'{hot_word}-{uuid.uuid4().hex[:6]}',
-                    'hot_word': hot_word,
-                    'subtitles': subtitles,
-                    'start': subtitles_start,
-                    'end': subtitles_end
-                })
-            # If translation is needed -> Translate the word and append the word.
-            else:
-                translated_text = self.translator.translate(subtitles)
-                translated_hot_words = clean_text(translated_text)
-
-                # Make sure the cleaned translated word is not None
-                if(translated_hot_words is None):
-                    continue
-
-                # Grab first word of translation
-                translated_hot_word = translated_hot_words.split()[0]
-                if(len(translated_hot_word) < 2):
-                    continue
-                logger.debug(
-                    f"Translataion. From '{self.subtitles_language}' to '{self.audio_language}'. From '{subtitles}' to '{translated_hot_words}'. Hot word: '{translated_hot_word}'")
-
-                valid_hot_words.append({
-                    'id': f'{translated_hot_word}-{uuid.uuid4().hex[:6]}',
-                    'hot_word': translated_hot_word,
-                    'subtitles': translated_hot_words,
-                    'start': subtitles_start,
-                    'end': subtitles_end
-                })
+            # if(self.audio_language == self.subtitles_language):
+            valid_hot_words.append({
+                'id': f'{hot_word}-{uuid.uuid4().hex[:6]}',
+                'hot_word': hot_word,
+                'subtitles': subtitles,
+                'start': subtitles_start,
+                'end': subtitles_end
+            })
+        
+        if(self.subtitles_language != self.audio_language):
+            valid_hot_words = self.translate_hot_words(valid_hot_words)
 
         logger.debug(
             f'Hot words before filtering and sorting: {valid_hot_words}')
         valid_hot_words = self.filter_hot_words(valid_hot_words)
         return valid_hot_words
+    
+        
+
+    def translate_hot_words(self, hot_words: list):
+        """
+        Translate hot words.
+
+        Params:
+            list: The hot words.
+                id (str): The word id.
+                hot_word (str): Hot word.
+                subtitles (str): The subtitles.
+                start (float): Start time.
+                end (float): End time.
+        
+        Returns:
+            list: The hot words translated.
+                id (str): The word id.
+                hot_word (str): Hot word.
+                subtitles (str): The subtitles.
+                start (float): Start time.
+                end (float): End time.
+        """       
+
+        threads = []
+        translated_hot_words = []
+        results = []
+
+        for hot_word_item in hot_words:
+            thread = threading.Thread(target=self.translator.translate, args=(hot_word_item['subtitles'], results))
+            thread.start()
+            threads.append(thread)
+
+        # Wait for threads to finish
+        [thread.join() for thread in threads]
+
+        for result in results:
+            source_subtitles = result['source_text']
+            item = [hot_word_item for hot_word_item in hot_words if hot_word_item['subtitles'] == source_subtitles][0]
+            cleaned_translated_subtitles = clean_text(result['translated_text'])
+            if(cleaned_translated_subtitles is None):
+                continue
+
+            item['subtitles'] = cleaned_translated_subtitles
+            item['hot_word'] = cleaned_translated_subtitles.split()[0]
+
+            if(len(item['hot_word']) < 2):
+                continue
+
+            logger.debug(
+                f"Translataion. From '{self.subtitles_language}' to '{self.audio_language}'. From '{source_subtitles}' to '{item['subtitles']}'. Hot word: '{item['hot_word']}'")
+
+            item['id'] = f'{item["hot_word"]}-{uuid.uuid4().hex[:6]}'
+            translated_hot_words.append(item)
+        return translated_hot_words
 
     def filter_hot_words(self, hot_words: list):
         """
