@@ -59,6 +59,8 @@ class DelayChecker():
             float: The delay.
         """
 
+        if(self.start == 0):
+            return None
         self.hot_words = self.filter_hot_words()
         if(len(self.hot_words) < Constants.VERIFY_DELAY_SAMPLES_TO_CHECK):
             logger.debug(f'Not enough hot words, aborting.')
@@ -81,7 +83,7 @@ class DelayChecker():
                 # Find the original time of the word in the subtitles
                 subtitles_start = [hot_word_item['start']
                                    for hot_word_item in self.hot_words if hot_word_item['id'] == trimmed_result['id']][0]
-                delay = trimmed_result['start'] - subtitles_start
+                delay = trimmed_result['start'] - (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME)
                 logger.debug(
                     f'Verifing delay {delay} of word id {trimmed_result["id"]}. Checked: {self.checked}')
                 is_verified = self.verify_delay(delay)
@@ -134,30 +136,28 @@ class DelayChecker():
         """
 
         grouped_sections = []
-        for section_start in range(self.start, self.end, Constants.DIVIDED_SECTIONS_TIME):
+        for section_start in range(0, Constants.DELAY_CHECKER_SECTIONS_TIME, Constants.DIVIDED_SECTIONS_TIME):
             section_end = section_start + Constants.DIVIDED_SECTIONS_TIME + \
                 Constants.ONE_WORD_AUDIO_TIME
-            if(section_end > self.end):
-                section_end = self.end  # Handle edge case where the end time is after the audio end time
-            section_item = {'ids': [],
-                            'start': section_start, 'end': section_end}
+            if(section_end > Constants.DELAY_CHECKER_SECTIONS_TIME):
+                section_end = Constants.DELAY_CHECKER_SECTIONS_TIME  # Handle edge case where the end time is after the audio end time
+            section_item = {'start': section_start,
+                            'end': section_end, 'ids': []}
 
             # Append ids of hot words inside timespan
             for hot_word_item in self.hot_words:
-                hot_word_start = hot_word_item['start'] - \
+                hot_word_start = hot_word_item['start'] % Constants.DELAY_CHECKER_SECTIONS_TIME - \
                     Constants.DELAY_RADIUS
-                hot_word_end = hot_word_item['end'] + Constants.DELAY_RADIUS
+                hot_word_end = hot_word_start + (Constants.DELAY_RADIUS * 2) + (hot_word_item['end'] - hot_word_item['start'])
                 is_word_in_section = hot_word_start < section_end and hot_word_end > section_start
                 if(is_word_in_section):
                     section_item['ids'].append(
                         {'id': hot_word_item['id'], 'occurences': None})
 
-            grouped_sections.append(section_item)
+            if(len(section_item['ids']) > 0):
+                grouped_sections.append(section_item)
 
-        # Remove Empty Sections
-        grouped_sections = [section_item for section_item in grouped_sections if len(
-            section_item['ids']) > 0]
-        logger.debug(f'Sections_items {grouped_sections}')
+        logger.debug(f'Grouped sections: {grouped_sections}')
         return grouped_sections
 
     def get_occurences_for_grouped_sections(self, grouped_sections: list):
