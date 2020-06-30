@@ -355,7 +355,7 @@ class DelayChecker():
         stop = False
 
         # Check if the hot words are translated. If so -> Change the samples to pass amount.
-        if(self.audio_language == self.subtitles_language):
+        if(self.audio_language == self.sp.subtitles_language):
             samples_to_pass = Constants.VERIFY_DELAY_SAMPLES_TO_PASS
         else:
             samples_to_pass = Constants.VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS
