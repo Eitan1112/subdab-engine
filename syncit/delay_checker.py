@@ -59,8 +59,6 @@ class DelayChecker():
             float: The delay.
         """
 
-        if(self.start == 0):
-            return None
         self.hot_words = self.filter_hot_words()
         if(len(self.hot_words) < Constants.VERIFY_DELAY_SAMPLES_TO_CHECK):
             logger.debug(f'Not enough hot words, aborting.')
