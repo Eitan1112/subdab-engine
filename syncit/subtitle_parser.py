@@ -6,7 +6,7 @@ from syncit.helpers import convert_subs_time, clean_text
 import logging
 import threading
 import os
-from syncit.translate import Translator
+from syncit.translate import CustomTranslator
 from chardet import detect as detect_encoding
 from langdetect import detect as detect_language
 from logger_setup import setup_logging
@@ -65,7 +65,7 @@ class SubtitleParser():
         else:
             self.subtitles_language = subtitles_language
 
-        self.translator = Translator(self.subtitles_language, audio_language)
+        self.translator = CustomTranslator(self.subtitles_language, audio_language)
 
     def read_subtitles(self):
         """
@@ -199,6 +199,7 @@ class SubtitleParser():
         translated_hot_words = []
         results = []
 
+        # Try using free and unstable API first, if not working use the official API
         for hot_word_item in hot_words:
             thread = threading.Thread(target=self.translator.translate, args=(hot_word_item['subtitles'], results))
             thread.start()
