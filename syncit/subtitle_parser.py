@@ -225,6 +225,8 @@ class SubtitleParser():
 
             item['id'] = f'{item["hot_word"]}-{uuid.uuid4().hex[:6]}'
             translated_hot_words.append(item)
+        
+        translated_hot_words.sort(key=lambda hot_word_item: hot_word_item['start'])
         return translated_hot_words
 
     def filter_hot_words(self, hot_words: list):
