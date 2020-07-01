@@ -8,6 +8,7 @@ from syncit.subtitle_parser import SubtitleParser
 # Setup Constant
 SAMPLE_SUBTITLES_PATH = os.path.join(Constants.SAMPLES_FOLDER, 'subtitles.srt')
 SAMPLE_SUBTITLES_LANGUAGE = 'en'
+SAMPLE_AUDIO_LANGUAGE = SAMPLE_SUBTITLES_LANGUAGE
 
 # test_read_subtitles Constants
 SAMPLE_SUBTITLES_STRING_LENGTH = 202842
@@ -58,7 +59,7 @@ class TestSubtitleParser(unittest.TestCase):
 
         subtitles_binary = open(SAMPLE_SUBTITLES_PATH, 'rb')
         subtitles_file = FileStorage(subtitles_binary)
-        self.sp = SubtitleParser(subtitles_file, SAMPLE_SUBTITLES_LANGUAGE)
+        self.sp = SubtitleParser(subtitles_file, SAMPLE_SUBTITLES_LANGUAGE, SAMPLE_AUDIO_LANGUAGE)
         subtitles_binary.close()
 
     def test_read_subtitles(self):
@@ -83,8 +84,9 @@ class TestSubtitleParser(unittest.TestCase):
         Make sure you get only valid hot words.
         """
 
-        hot_words = self.sp.get_valid_hot_words(START, END, LANGUAGE)
-        self.assertEqual(hot_words, WORDS, 'Check get_valid_hot_words.')
+        hot_word_items = self.sp.get_valid_hot_words(START, END)
+        hot_words_without_ids = [{'hot_word':hot_word_item['hot_word'], 'start':hot_word_item['start'], 'end': hot_word_item['end'], 'subtitles': hot_word_item['subtitles']} for hot_word_item in hot_word_items]
+        self.assertEqual(hot_words_without_ids, WORDS, 'Check get_valid_hot_words.')
 
     def test_filter_hot_words(self):
         """

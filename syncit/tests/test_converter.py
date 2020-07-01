@@ -56,6 +56,6 @@ class TestConverter(unittest.TestCase):
         Check the convert_audio_to_text method.
         """
 
-        text = self.converter.convert_audio_to_text(START, END, WORD)
+        text = self.converter.convert_audio_to_text(START, END, [WORD], lambda: False)
         text = text.strip()
         self.assertEqual(text, WORD)
