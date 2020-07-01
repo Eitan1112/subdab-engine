@@ -58,7 +58,8 @@ class CustomTranslator():
                 logger.warning(f'Unable to translate using unstable translation. Error: {err}')
                 self.translation_method = False
                 return self.translate(string, results)
-                
+        
+        logger.debug(f'Translating using API.')
         response = translate_client.translate(
             string, target_language=self.target_language, source_language=self.source_language)
         results.append({'source_text': string, 'translated_text': response['translatedText']})

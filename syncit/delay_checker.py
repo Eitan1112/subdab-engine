@@ -78,6 +78,10 @@ class DelayChecker():
                 trimmed_results)
 
             for trimmed_result in verified_trimmed_results:
+                # Abort if already checked a lot of delays
+                if(len(self.falty_delays) > Constants.MAXIMUM_DELAYS_TO_VERIFY):
+                    return None
+
                 # Find the original time of the word in the subtitles
                 subtitles_start = [hot_word_item['start']
                                    for hot_word_item in self.hot_words if hot_word_item['id'] == trimmed_result['id']][0]

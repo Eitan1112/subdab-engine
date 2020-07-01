@@ -18,39 +18,6 @@ app = Flask(__name__)
 if(os.environ.get('Environment') == 'dev'):
     CORS(app)
 
-
-# @app.route('/check_sync', methods=['POST'])
-# def check_sync():
-#     """
-#     Route to check if buffers and subtitles are synced or not.
-
-#     Request Params:
-#         data (list): List of lists conatining [base64_buffer, subtitles] e.g: [[f3b5AAA, 'I went to eat'], [a93KKpr, 'I went to sleep']]
-
-#     Returns:
-#         Boolean: If synced or not.
-#     """
-
-#     logger.info('Checking sync.')
-#     if(type(request.json) != dict):
-#         print(type(request.json), len(request.json))
-#         return Response(json.dumps({'error': 'Bad request.'}), 400)
-
-#     try:
-#         logger.debug('Request validated, getting json')
-#         data = request.json['data']
-#         extension = request.json['extension']
-#         logger.debug('Recieved json, initating checker')
-#         checker = SyncChecker(extension, data)
-#         logger.debug('Check initiated, check is_synced')
-#         is_synced = checker.check_is_synced()
-#         return Response(json.dumps({'is_synced': is_synced}), 200)
-
-#     except Exception as e:
-#         logger.error(f'Error in check_sync. Error: {e}')
-#         return Response(json.dumps({'error': 'Internal server error.'}), 500)
-
-
 @app.route('/check_delay', methods=['POST'])
 def check_delay():
     """
