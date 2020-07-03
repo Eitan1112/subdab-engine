@@ -1,3 +1,4 @@
+uwsgi
 MoviePy
 PocketSphinx
 SpeechRecognition
