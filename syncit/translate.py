@@ -15,7 +15,7 @@ load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
 
-auth_data = json.loads(base64.b64decode(os.getenv('GOOGLE_APPLICATION_CREDENTIALS')).decode('utf-8'))
+auth_data = json.loads(base64.b64decode(os.getenv('GOOGLE_TRANSLATE_API_CREDENTIALS')).decode('utf-8'))
 creds = GoogleCredentials.from_service_account_info(auth_data)
 translate_client = translate.Client(credentials=creds)
 
