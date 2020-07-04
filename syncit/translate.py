@@ -1,17 +1,23 @@
 from google.cloud import translate_v2 as translate
+from google.oauth2.service_account import Credentials as GoogleCredentials
 from dotenv import load_dotenv
 import requests
 import logging
 import urllib
+import json
+import os
+import base64
 from googletrans import Translator as UnstableTranslator
 from logger_setup import setup_logging
+from syncit.constants import Constants
 
 load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
 
-translate_client = translate.Client()
-
+auth_data = json.loads(base64.b64decode(os.getenv('GOOGLE_APPLICATION_CREDENTIALS')).decode('utf-8'))
+creds = GoogleCredentials.from_service_account_info(auth_data)
+translate_client = translate.Client(credentials=creds)
 
 class CustomTranslator():
     """
@@ -48,6 +54,7 @@ class CustomTranslator():
                 target_text (str): The target text.
         """
 
+        # Free Ajax Request (Unstable)
         if(self.stable_translation is False):
             try:
                 translator = UnstableTranslator()
@@ -59,6 +66,7 @@ class CustomTranslator():
                 self.translation_method = False
                 return self.translate(string, results)
         
+        # Official API (Stable)
         logger.debug(f'Translating using API.')
         response = translate_client.translate(
             string, target_language=self.target_language, source_language=self.source_language)

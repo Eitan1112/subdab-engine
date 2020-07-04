@@ -51,6 +51,8 @@ class Constants():
     TRIM_SECTION_STEP = 0.2
     REQUEST_TIMEOUT = 8
 
+    GOOGLE_AUTH_FILENAME = 'google_auth.json'
+
     GOOGLE_LANGUAGES = [{'language': 'af', 'name': 'Afrikaans'},
                         {'language': 'sq', 'name': 'Albanian'},
                         {'language': 'am', 'name': 'Amharic'},
