@@ -15,9 +15,11 @@ load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
 
-auth_data = json.loads(base64.b64decode(os.getenv('GOOGLE_TRANSLATE_API_CREDENTIALS')).decode('utf-8'))
+auth_data = json.loads(base64.b64decode(
+    os.getenv('GOOGLE_TRANSLATE_API_CREDENTIALS')).decode('utf-8'))
 creds = GoogleCredentials.from_service_account_info(auth_data)
 translate_client = translate.Client(credentials=creds)
+
 
 class CustomTranslator():
     """
@@ -58,20 +60,21 @@ class CustomTranslator():
         if(self.stable_translation is False):
             try:
                 translator = UnstableTranslator()
-                translated_text = translator.translate(string, src=self.source_language, dest=self.target_language).text
-                results.append({'source_text': string, 'translated_text': translated_text})
+                translated_text = translator.translate(
+                    string, src=self.source_language, dest=self.target_language).text
+                results.append(
+                    {'source_text': string, 'translated_text': translated_text})
                 return translated_text
             except Exception as err:
-                logger.warning(f'Unable to translate using unstable translation. Error: {err}')
+                logger.warning(
+                    f'Unable to translate using unstable translation. Error: {err}')
                 self.translation_method = False
                 return self.translate(string, results)
-        
+
         # Official API (Stable)
         logger.debug(f'Translating using API.')
         response = translate_client.translate(
             string, target_language=self.target_language, source_language=self.source_language)
-        results.append({'source_text': string, 'translated_text': response['translatedText']})
+        results.append(
+            {'source_text': string, 'translated_text': response['translatedText']})
         return response['translatedText']
-
-
-            
