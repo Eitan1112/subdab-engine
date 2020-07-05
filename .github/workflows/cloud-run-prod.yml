@@ -11,7 +11,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
   RUN_REGION: us-central1
-  SERVICE_NAME: syncit-backend-dev
+  SERVICE_NAME: syncit-backend-prod
 
 jobs:
   setup-build-deploy:
