@@ -1,0 +1,55 @@
+# Taken from https://github.com/GoogleCloudPlatform/github-actions/blob/afd588889267611d23d29096464f3a4f7f748f34/example-workflows/cloud-run/.github/workflows/cloud-run.yml
+
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+    - master
+
+# Environment variables available to all jobs and steps in this workflow
+env:
+  PROJECT_ID: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+  RUN_REGION: us-central1
+  SERVICE_NAME: syncit-backend-dev
+
+jobs:
+  setup-build-deploy:
+    name: Setup, Build, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      # Setup gcloud CLI
+      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          version: '290.0.0'
+          service_account_email: ${{ secrets.RUN_SA_EMAIL }}
+          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+
+      # Configure gcloud CLI
+      - name: gcloud Set up
+        run: |
+          gcloud config set project $PROJECT_ID
+      # Build and push image to Google Container Registry
+      - name: Build
+        run: |
+          gcloud builds submit -t us.gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA \
+          --timeout 1800
+      # Deploy image to Cloud Run
+      - name: Deploy
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --region $RUN_REGION \
+            --image us.gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA \
+            --platform managed \
+            --port 80 \
+            --cpu 2 \
+            --memory 1024Mi \
+            --allow-unauthenticated \
+            --timeout 15m \
+            --concurrency 5 \
+            --max-instances 30 \
+            --set-env-vars="CONVERT_SPEECH_TO_TEXT_SERVER_URL=https://syncit-speech-to-text-ycu3nfdh3q-uc.a.run.app,GOOGLE_TRANSLATE_API_CREDENTIALS=${{ secrets.GOOGLE_TRANSLATE_API_CREDENTIALS }}"
