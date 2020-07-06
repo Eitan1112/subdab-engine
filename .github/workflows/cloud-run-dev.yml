@@ -47,7 +47,7 @@ jobs:
             --platform managed \
             --port 80 \
             --cpu 2 \
-            --memory 1024Mi \
+            --memory 2048Mi \
             --allow-unauthenticated \
             --timeout 15m \
             --concurrency 5 \
