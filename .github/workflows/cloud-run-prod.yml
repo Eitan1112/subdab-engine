@@ -52,4 +52,4 @@ jobs:
             --timeout 15m \
             --concurrency 1 \
             --max-instances 30 \
-            --set-env-vars="PYTHONIOENCODING=utf-8,CONVERT_SPEECH_TO_TEXT_SERVER_URL=https://syncit-speech-to-text-ycu3nfdh3q-uc.a.run.app/convert,GOOGLE_TRANSLATE_API_CREDENTIALS=${{ secrets.GOOGLE_TRANSLATE_API_CREDENTIALS }}"
+            --set-env-vars="CONVERT_SPEECH_TO_TEXT_SERVER_URL=https://syncit-speech-to-text-ycu3nfdh3q-uc.a.run.app/convert,GOOGLE_TRANSLATE_API_CREDENTIALS=${{ secrets.GOOGLE_TRANSLATE_API_CREDENTIALS }}"
