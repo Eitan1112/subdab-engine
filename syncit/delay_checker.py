@@ -85,7 +85,8 @@ class DelayChecker():
                 # Find the original time of the word in the subtitles
                 subtitles_start = [hot_word_item['start']
                                    for hot_word_item in self.hot_words if hot_word_item['id'] == trimmed_result['id']][0]
-                delay = trimmed_result['start'] - (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME)
+                delay = trimmed_result['start'] - \
+                    (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME)
                 logger.debug(
                     f'Verifing delay {delay} of word id {trimmed_result["id"]}. Checked: {self.checked}')
                 is_verified = self.verify_delay(delay)
@@ -109,7 +110,10 @@ class DelayChecker():
             sections_ids = [hot_word_item['id'] for hot_word_item in self.hot_words if hot_word_item['start'] >
                             start and hot_word_item['end'] < end - Constants.FILTER_HOT_WORDS_ADD_TO_END]
             transcript_start = start % Constants.DELAY_CHECKER_SECTIONS_TIME
-            transcript_end = end % Constants.DELAY_CHECKER_SECTIONS_TIME
+            transcript_end = transcript_start + (end - start)
+            if(transcript_end > Constants.DELAY_CHECKER_SECTIONS_TIME):
+                transcript_end = Constants.DELAY_CHECKER_SECTIONS_TIME
+                
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(
                 transcript_start, transcript_end, sections_ids, results))
             thread.start()
@@ -142,7 +146,8 @@ class DelayChecker():
             section_end = section_start + Constants.DIVIDED_SECTIONS_TIME + \
                 Constants.ONE_WORD_AUDIO_TIME
             if(section_end > Constants.DELAY_CHECKER_SECTIONS_TIME):
-                section_end = Constants.DELAY_CHECKER_SECTIONS_TIME  # Handle edge case where the end time is after the audio end time
+                # Handle edge case where the end time is after the audio end time
+                section_end = Constants.DELAY_CHECKER_SECTIONS_TIME
             section_item = {'start': section_start,
                             'end': section_end, 'ids': []}
 
@@ -150,7 +155,9 @@ class DelayChecker():
             for hot_word_item in self.hot_words:
                 hot_word_start = hot_word_item['start'] % Constants.DELAY_CHECKER_SECTIONS_TIME - \
                     Constants.DELAY_RADIUS
-                hot_word_end = hot_word_start + (Constants.DELAY_RADIUS * 2) + (hot_word_item['end'] - hot_word_item['start'])
+                hot_word_end = hot_word_start + \
+                    (Constants.DELAY_RADIUS * 2) + \
+                    (hot_word_item['end'] - hot_word_item['start'])
                 is_word_in_section = hot_word_start < section_end and hot_word_end > section_start
                 if(is_word_in_section):
                     section_item['ids'].append(
@@ -420,14 +427,12 @@ class DelayChecker():
         if(len(ids_checked) == len(ids)):
             timespan_result = [{'id': id, 'occurences': 0}
                                for index, id in enumerate(ids)]
-            # logger.debug(f"Already checked. Checking: {start}-{end}-{ids}. Checked: {[checked for id in ids for checked in self.checked if id == checked['id'] and start >= checked['start'] and end <= checked['end'] and checked['occurences'] == 0]}")
 
         else:
             transcript = self.converter.convert_audio_to_text(
                 start, end, hot_words, stop)
             timespan_result = [{'id': id, 'occurences': transcript.split().count(
                 hot_words[index])} for index, id in enumerate(ids)]
-            # logger.debug(f"Adding to checked: {[{'start': start, 'end': end, 'id': item['id'], 'occurences': item['occurences']} for item in timespan_result]}")
             self.checked += [{'start': start, 'end': end, 'id': item['id'],
                               'occurences': item['occurences']} for item in timespan_result if item['occurences'] == 0]
 
