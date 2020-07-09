@@ -9,3 +9,4 @@ google-cloud-translate==2.0.1
 langdetect
 python-dotenv
 googletrans
+python-dotenv
