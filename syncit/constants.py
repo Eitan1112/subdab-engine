@@ -10,7 +10,7 @@ class Constants():
     # After verifing X delays, send a response without delay to recieve new timestamp.
     MAXIMUM_DELAYS_TO_VERIFY = 15
 
-    VERIFY_DELAY_SAMPLES_TO_CHECK = 13
+    VERIFY_DELAY_SAMPLES_TO_CHECK = 16
     VERIFY_DELAY_SAMPLES_TO_PASS = 6
     VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS = 6
 
