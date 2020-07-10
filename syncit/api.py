@@ -13,10 +13,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-
-# On prod the nginx configuration takes care of the CORS
-if(os.getenv('ENVIRONMENT') == 'dev'):
-    CORS(app)
+CORS(app) # Adds CORS header
 
 @app.route('/check_delay', methods=['POST'])
 def check_delay():
