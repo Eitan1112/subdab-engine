@@ -48,19 +48,19 @@ def check_delay():
     except:
         return Response({'error': 'Bad Request'}, 400)
 
-    try:
-        dc = DelayChecker(audio_file, start, end, subtitles_file, audio_language, subtitles_language)
-        delay = dc.check_delay()
+    # try:
+    dc = DelayChecker(audio_file, start, end, subtitles_file, audio_language, subtitles_language)
+    delay = dc.check_delay()
 
-        if(delay is None):
-            return Response(json.dumps({}), 200)
+    if(delay is None):
+        return Response(json.dumps({}), 200)
 
-        else:
-            encoding = dc.sp.encoding
-            return Response(json.dumps({'delay': delay, 'encoding': encoding}), 200)
-    except Exception as e:
-        logger.error(f'Error in check_delay. Error: {e}')
-        return Response(json.dumps({'error': 'Internal Server Error.'}), 500)
+    else:
+        encoding = dc.sp.encoding
+        return Response(json.dumps({'delay': delay, 'encoding': encoding}), 200)
+    # except Exception as e:
+    #     logger.error(f'Error in check_delay. Error: {e}')
+    #     return Response(json.dumps({'error': 'Internal Server Error.'}), 500)
 
 
 @app.errorhandler(404)

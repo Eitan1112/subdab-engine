@@ -10,7 +10,7 @@ class Constants():
     # After verifing X delays, send a response without delay to recieve new timestamp.
     MAXIMUM_DELAYS_TO_VERIFY = 15
 
-    VERIFY_DELAY_SAMPLES_TO_CHECK = 13
+    VERIFY_DELAY_SAMPLES_TO_CHECK = 15
     VERIFY_DELAY_SAMPLES_TO_PASS = 6
     VERIFY_DELAY_TRANSLATED_SAMPLES_TO_PASS = 6
 
@@ -46,10 +46,12 @@ class Constants():
 
     RETRIES_AFTER_API_ERROR = 4
     
-    MAX_OCCURENCES_IN_ONE_SECTION = 5
-    MAX_OCCURENCES_FOR_ONE_WORD = 6
+    MAX_OCCURENCES_IN_ONE_SECTION = 2
+    MAX_OCCURENCES_FOR_ONE_WORD = 2
     TRIM_SECTION_STEP = 0.2
     REQUEST_TIMEOUT = 8
+
+    VERIFY_TRIMMED_WORD_RADIUS = 0.4
 
     GOOGLE_AUTH_FILENAME = 'google_auth.json'
 

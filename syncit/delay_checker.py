@@ -1,5 +1,5 @@
 import random
-import ctypes
+import math
 import threading
 import time
 import uuid
@@ -74,10 +74,8 @@ class DelayChecker():
                 section['start'], section['end'], section_ids)
             if(trimmed_results == None):
                 continue
-            verified_trimmed_results = self.verify_trimmed_results(
-                trimmed_results)
 
-            for trimmed_result in verified_trimmed_results:
+            for trimmed_result in trimmed_results:
                 # Abort if already checked a lot of delays
                 if(len(self.falty_delays) > Constants.MAXIMUM_DELAYS_TO_VERIFY):
                     return None
@@ -88,11 +86,10 @@ class DelayChecker():
                 delay = trimmed_result['start'] - \
                     (subtitles_start % Constants.DELAY_CHECKER_SECTIONS_TIME)
                 logger.debug(
-                    f'Verifing delay {delay} of word id {trimmed_result["id"]}. Checked: {self.checked}')
+                    f'Verifing delay {delay} of word id {trimmed_result["id"]}.')
                 is_verified = self.verify_delay(delay)
                 if(is_verified):
                     return delay
-
 
     def get_grouped_sections(self):
         """
@@ -194,14 +191,16 @@ class DelayChecker():
         words_total_occurences = {}
         for hot_word_item in self.hot_words:
             words_total_occurences[hot_word_item['id']] = 0
-        
+
         # Loop through the grouped sections and add occurences for each hot word
         for section in grouped_sections:
             for item in section['ids']:
                 words_total_occurences[item['id']] += item['occurences']
-        
-        ids_to_remove = [id for id in words_total_occurences if words_total_occurences[id] == 0 or words_total_occurences[id] > Constants.FILTER_HOT_WORDS_MAXIMUM_OCCURENCES]
-        filtered_hot_words = [hot_word_item for hot_word_item in self.hot_words if hot_word_item['id'] not in ids_to_remove]
+
+        ids_to_remove = [id for id in words_total_occurences if words_total_occurences[id]
+                         == 0 or words_total_occurences[id] > Constants.FILTER_HOT_WORDS_MAXIMUM_OCCURENCES]
+        filtered_hot_words = [
+            hot_word_item for hot_word_item in self.hot_words if hot_word_item['id'] not in ids_to_remove]
         logger.debug(f'Filtered hot words: {filtered_hot_words}')
         return filtered_hot_words
 
@@ -252,8 +251,6 @@ class DelayChecker():
         logger.debug(f'Filtered Grouped Results: {filtered_grouped_results}')
         return filtered_grouped_results
 
-
-
     def trim_section(self, start, end, ids):
         """
         Trim a section of hot words.
@@ -274,36 +271,57 @@ class DelayChecker():
         results = []
         stop = False
         threads = []
-        for current_start in np.arange(start, end, Constants.TRIM_SECTION_STEP):
+        starts_range = np.arange(start, end, Constants.TRIM_SECTION_STEP)
+        for current_start in starts_range:
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(
                 current_start, end, ids, results, lambda: stop))
             thread.start()
             threads.append(thread)
 
         while True:
-            final_ids_times = []
+            # List of dicts with id and start time. (e.g.: {'id': 'hello-12vcb3', 'start': 10.799})
+            all_trimmed_results = []
+            # Sort results by start time
             sorted_results = sorted(
                 results, key=lambda result: result['start'])
-            for idx, single_timestamp_results in enumerate(sorted_results[:-1]):
-                for current_result in single_timestamp_results['ids']:
-                    if(current_result['occurences'] != 1):
-                        continue
-                    for next_result in results[idx + 1]['ids']:
-                        if(next_result['id'] == current_result['id'] and next_result['occurences'] == 0):
-                            final_ids_times.append(
-                                {'id': current_result['id'], 'start': single_timestamp_results['start']})
-                            if(len(final_ids_times) == len(ids)):
-                                stop = True
-                                logger.debug(
-                                    f'Final ids times returned: {final_ids_times}.')
-                                return final_ids_times
 
-            # Break loop if all threads are finished
-            if(len(results) == len(threads)):
-                break
+            # Loop through combos of result and next result
+            for result, next_result in zip(sorted_results[:-1], sorted_results[1:]):
+                
+                # If the next result is more then the trim step -> continue (it happends because of the threading)
+                if(math.isclose(next_result['start'] - result['start'],Constants.TRIM_SECTION_STEP) is False): # Using math.isclose becuase the equality is falty in float numbers
+                    continue
+                
+                # If the final trimmed section also has the hot word present, add it
+                
+                # If the final trimmed section also has the hot word present, add it
+                if(next_result['start'] == starts_range[-1]):
+                    last_section_trimmed_results = [item for item in next_result['ids'] if item['occurences'] > 0]
+                    all_trimmed_results += [{'id': trimmed_result['id'], 'start': result['start']} for trimmed_result in last_section_trimmed_results]
+
+                # Grab items where the id's correlate and the occurences are at least 1 for the first and 0 for the next
+                some_trimmed_results = [item for item in result['ids'] for next_item in next_result['ids'] if item['id']
+                              == next_item['id'] and item['occurences'] > 0 and next_item['occurences'] == 0]
+
+
+                all_trimmed_results += [{'id': trimmed_result['id'], 'start': result['start']} for trimmed_result in some_trimmed_results]
+
+                if(len(all_trimmed_results) == len(ids)):
+                    stop = True
+                    logger.debug(
+                        f'Final ids times returened: {all_trimmed_results}. Results: {sorted_results}')
+                    return all_trimmed_results
+                
+            # Break loop if all threads are finished or there are no occurences in the first result
+            if(len(results) > 0):
+                if(len(results) == len(threads) or
+                (results[0]['start'] == starts_range[0] and results[0]['occurences'] == 0)):
+                    logger.debug(f'Unable to trim {start}-{end}-{ids}. Results: {sorted_results}')
+                    stop = True
+                    break
 
         logger.error(
-            f'Unable to find trimmed time. Results: {sorted_results}. Final ids times: {final_ids_times}')
+            f'Unable to find trimmed time. Results: {sorted_results}. Final ids times: {all_trimmed_results}')
 
     def verify_trimmed_results(self, trimmed_results):
         """
@@ -325,7 +343,7 @@ class DelayChecker():
         for result in trimmed_results:
             logger.debug(f'Verifing result: {result}.')
             thread = threading.Thread(target=self.get_hot_words_occurences, args=(
-                result['start'], result['start'] + Constants.ONE_WORD_AUDIO_TIME, [result['id']], occurences_results))
+                result['start'] - Constants.VERIFY_TRIMMED_WORD_RADIUS, result['start'] + Constants.ONE_WORD_AUDIO_TIME + Constants.VERIFY_TRIMMED_WORD_RADIUS, [result['id']], occurences_results))
             thread.start()
             threads.append(thread)
 
@@ -421,7 +439,6 @@ class DelayChecker():
         ids_checked = [id for id in ids for checked in self.checked if id == checked['id']
                        and start >= checked['start'] and end <= checked['end'] and checked['occurences'] == 0]
 
-
         if(len(ids_checked) == len(ids)):
             timespan_result = [{'id': id, 'occurences': 0}
                                for index, id in enumerate(ids)]
@@ -429,7 +446,7 @@ class DelayChecker():
         else:
             # Get list of words from the list of ids
             hot_words = [hot_word_item['hot_word']
-                        for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
+                         for hot_word_item in self.hot_words if hot_word_item['id'] in ids]
             # Get transcript
             transcript = self.converter.convert_audio_to_text(
                 start, end, hot_words, stop)
