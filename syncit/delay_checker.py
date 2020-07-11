@@ -89,6 +89,7 @@ class DelayChecker():
                     f'Verifing delay {delay} of word id {trimmed_result["id"]}.')
                 is_verified = self.verify_delay(delay)
                 if(is_verified):
+                    self.converter.clean()
                     return delay
 
     def get_grouped_sections(self):

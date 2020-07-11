@@ -5,13 +5,14 @@ import tempfile
 import shutil
 import os
 import base64
+import threading
 import json
 import requests
+from datetime import datetime
 import uuid
 import speech_recognition as sr
 from syncit.constants import Constants
 import logging
-from syncit.constants import Constants
 from logger_setup import setup_logging
 
 
@@ -143,6 +144,7 @@ class Converter():
 
         if(self.tmpdir):
             try:
+                logger.debug(f'Removed temporary folder. Folder: {self.tmpdir}')
                 shutil.rmtree(self.tmpdir)
             except:
-                logger.warning(f'Unable to clean up.')
+                logger.warning(f'Unable to remove temporary folder. Path: {self.tmpdir}')
