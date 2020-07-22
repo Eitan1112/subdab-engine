@@ -316,13 +316,11 @@ class DelayChecker():
                         f'Final ids times returened: {all_trimmed_results}. Results: {sorted_results}')
                     return all_trimmed_results
                 
-            # Break loop if all threads are finished or there are no occurences in the first result
-            if(len(results) > 0):
-                if(len(results) == len(threads) or
-                (results[0]['start'] == starts_range[0] and results[0]['occurences'] == 0)):
-                    logger.debug(f'Unable to trim {start}-{end}-{ids}. Results: {sorted_results}')
-                    stop = True
-                    break
+            # Break loop if all threads are finished
+            if(len(results) == len(threads)):
+                logger.debug(f'Unable to trim {start}-{end}-{ids}. Results: {sorted_results}')
+                stop = True
+                break
 
         logger.error(
             f'Unable to find trimmed time. Results: {sorted_results}. Final ids times: {all_trimmed_results}')
