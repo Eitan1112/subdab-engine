@@ -66,6 +66,9 @@ class DelayChecker():
         grouped_sections = self.get_occurences_for_grouped_sections(
             grouped_sections)
         self.hot_words = self.filter_hot_words(grouped_sections)
+        if(len(self.hot_words) < Constants.VERIFY_DELAY_SAMPLES_TO_CHECK):
+            logger.debug(f'Not enough hot words after filtering, aborting')
+            return
         grouped_sections = self.filter_grouped_sections(grouped_sections)
 
         for section in grouped_sections:
